@@ -32,14 +32,14 @@ const Cart = () => {
   };
   
   const subtotal = cart.totalPrice;
-  const shipping = subtotal > 50 ? 0 : subtotal > 0 ? 5.99 : 0;
+  const shipping = subtotal > 2000 ? 0 : subtotal > 0 ? 99 : 0;
   const total = subtotal + shipping - promoDiscount;
   
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
+      currency: 'INR',
+      maximumFractionDigits: 2
     }).format(price);
   };
 
@@ -188,7 +188,7 @@ const Cart = () => {
                 </div>
                 <h2 className="text-2xl font-display font-bold mb-4">Your cart is empty</h2>
                 <p className="text-muted-foreground max-w-md mx-auto mb-8">
-                  Looks like you haven't added any products to your cart yet. Browse our collection and discover premium fruits and vegetables.
+                  Looks like you haven't added any products to your cart yet. Browse our collection and discover premium fruits and vegetables from Amrit Naturals.
                 </p>
                 <Link to="/shop" className="btn-primary">
                   Start Shopping

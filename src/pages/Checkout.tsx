@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
@@ -17,8 +17,41 @@ import {
   ChevronsRight,
   MapPin,
   Truck,
-  ShoppingBag
+  ShoppingBag,
+  Smartphone
 } from "lucide-react";
+
+// List of Indian states
+const indianStates = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", 
+  "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", 
+  "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", 
+  "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", 
+  "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", 
+  "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", 
+  "Lakshadweep", "Puducherry"
+];
+
+// Countries list (abbreviated)
+const countries = [
+  "India", "United States", "United Kingdom", "Canada", "Australia", "China", "Japan", 
+  "Germany", "France", "Italy", "Spain", "Russia", "Brazil", "Mexico", "South Africa", 
+  "Saudi Arabia", "UAE", "Singapore", "Malaysia", "Thailand"
+];
+
+// Sample postal code to city mapping for demo
+const postalCodeToCity: Record<string, { city: string, state: string }> = {
+  "110001": { city: "New Delhi", state: "Delhi" },
+  "400001": { city: "Mumbai", state: "Maharashtra" },
+  "700001": { city: "Kolkata", state: "West Bengal" },
+  "600001": { city: "Chennai", state: "Tamil Nadu" },
+  "560001": { city: "Bengaluru", state: "Karnataka" },
+  "500001": { city: "Hyderabad", state: "Telangana" },
+  "380001": { city: "Ahmedabad", state: "Gujarat" },
+  "226001": { city: "Lucknow", state: "Uttar Pradesh" },
+  "800001": { city: "Patna", state: "Bihar" },
+  "302001": { city: "Jaipur", state: "Rajasthan" }
+};
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -44,7 +77,7 @@ const Checkout = () => {
     city: "",
     state: "",
     postalCode: "",
-    country: "United States",
+    country: "India",
     phone: ""
   });
   
@@ -54,28 +87,50 @@ const Checkout = () => {
     expiryDate: "",
     cvv: ""
   });
+
+  const [upiForm, setUpiForm] = useState({
+    upiId: ""
+  });
   
   const subtotal = cart.totalPrice;
-  const shipping = deliveryMethod === "express" ? 14.99 : deliveryMethod === "standard" ? 5.99 : 0;
-  const tax = subtotal * 0.07; // 7% tax
+  const shipping = deliveryMethod === "express" ? 249 : deliveryMethod === "standard" ? 99 : 0;
+  const tax = subtotal * 0.18; // 18% GST
   const total = subtotal + shipping + tax;
   
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
+      currency: 'INR',
+      maximumFractionDigits: 2
     }).format(price);
   };
   
   const handleShippingFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setShippingForm(prev => ({ ...prev, [name]: value }));
+    
+    // Auto-fill city and state based on postal code
+    if (name === "postalCode" && value.length === 6) {
+      const locationInfo = postalCodeToCity[value];
+      if (locationInfo) {
+        setShippingForm(prev => ({
+          ...prev,
+          city: locationInfo.city,
+          state: locationInfo.state
+        }));
+        toast.success(`Found location: ${locationInfo.city}, ${locationInfo.state}`);
+      }
+    }
   };
   
   const handleCardFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setCardForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleUpiFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setUpiForm(prev => ({ ...prev, [name]: value }));
   };
   
   const handleContinue = () => {
@@ -100,19 +155,45 @@ const Checkout = () => {
   };
   
   const handleSubmitOrder = async () => {
-    // Validate payment details if using card
+    // Validate payment details based on method
     if (paymentMethod === "card") {
       const { cardNumber, cardName, expiryDate, cvv } = cardForm;
       if (!cardNumber || !cardName || !expiryDate || !cvv) {
         toast.error("Please fill in all card details");
         return;
       }
+    } else if (paymentMethod === "upi") {
+      if (!upiForm.upiId) {
+        toast.error("Please enter your UPI ID");
+        return;
+      }
     }
     
     setOrderProcessing(true);
     
-    // Simulate order processing
+    // Simulate order processing and Google Sheets submission
     try {
+      // Simulate Google Sheets submission
+      const orderData = {
+        orderId: `ORD-${Date.now()}`,
+        customer: shippingForm.fullName,
+        email: shippingForm.email,
+        phone: shippingForm.phone,
+        address: `${shippingForm.address}, ${shippingForm.city}, ${shippingForm.state}, ${shippingForm.postalCode}, ${shippingForm.country}`,
+        items: cart.items.map(item => `${item.name} x${item.quantity}`).join(", "),
+        subtotal: subtotal,
+        shipping: shipping,
+        tax: tax,
+        total: total,
+        paymentMethod: paymentMethod,
+        orderDate: new Date().toISOString()
+      };
+      
+      console.log("Order submitted to Google Sheets:", orderData);
+      
+      // In a real app, you would submit this data to Google Sheets via an API
+      
+      // Simulate processing delay
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Clear cart after successful order
@@ -242,6 +323,24 @@ const Checkout = () => {
                             required
                           />
                         </div>
+
+                        <div>
+                          <label htmlFor="postalCode" className="block text-sm font-medium mb-2">
+                            PIN Code *
+                          </label>
+                          <input
+                            type="text"
+                            id="postalCode"
+                            name="postalCode"
+                            value={shippingForm.postalCode}
+                            onChange={handleShippingFormChange}
+                            className="w-full rounded-lg border border-border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            placeholder="Enter 6-digit PIN code"
+                            maxLength={6}
+                            required
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">Enter PIN code to auto-fill city and state</p>
+                        </div>
                         
                         <div>
                           <label htmlFor="city" className="block text-sm font-medium mb-2">
@@ -260,32 +359,21 @@ const Checkout = () => {
                         
                         <div>
                           <label htmlFor="state" className="block text-sm font-medium mb-2">
-                            State/Province *
+                            State/UT *
                           </label>
-                          <input
-                            type="text"
+                          <select
                             id="state"
                             name="state"
                             value={shippingForm.state}
                             onChange={handleShippingFormChange}
                             className="w-full rounded-lg border border-border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
                             required
-                          />
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="postalCode" className="block text-sm font-medium mb-2">
-                            ZIP/Postal Code *
-                          </label>
-                          <input
-                            type="text"
-                            id="postalCode"
-                            name="postalCode"
-                            value={shippingForm.postalCode}
-                            onChange={handleShippingFormChange}
-                            className="w-full rounded-lg border border-border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            required
-                          />
+                          >
+                            <option value="">Select State</option>
+                            {indianStates.map(state => (
+                              <option key={state} value={state}>{state}</option>
+                            ))}
+                          </select>
                         </div>
                         
                         <div>
@@ -300,10 +388,9 @@ const Checkout = () => {
                             className="w-full rounded-lg border border-border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
                             required
                           >
-                            <option value="United States">United States</option>
-                            <option value="Canada">Canada</option>
-                            <option value="United Kingdom">United Kingdom</option>
-                            <option value="Australia">Australia</option>
+                            {countries.map(country => (
+                              <option key={country} value={country}>{country}</option>
+                            ))}
                           </select>
                         </div>
                         
@@ -318,6 +405,7 @@ const Checkout = () => {
                             value={shippingForm.phone}
                             onChange={handleShippingFormChange}
                             className="w-full rounded-lg border border-border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            placeholder="10-digit mobile number"
                             required
                           />
                         </div>
@@ -346,7 +434,7 @@ const Checkout = () => {
                             <div className="flex-grow">
                               <div className="flex justify-between">
                                 <h3 className="font-medium">Standard Delivery</h3>
-                                <span className="font-medium">{formatPrice(5.99)}</span>
+                                <span className="font-medium">{formatPrice(99)}</span>
                               </div>
                               <p className="text-sm text-muted-foreground mt-1">
                                 Delivery within 3-5 business days
@@ -370,7 +458,7 @@ const Checkout = () => {
                             <div className="flex-grow">
                               <div className="flex justify-between">
                                 <h3 className="font-medium">Express Delivery</h3>
-                                <span className="font-medium">{formatPrice(14.99)}</span>
+                                <span className="font-medium">{formatPrice(249)}</span>
                               </div>
                               <p className="text-sm text-muted-foreground mt-1">
                                 Delivery within 1-2 business days
@@ -428,27 +516,69 @@ const Checkout = () => {
                               </div>
                               <div className="flex-grow">
                                 <h3 className="font-medium">Credit/Debit Card</h3>
+                                <p className="text-xs text-muted-foreground">Visa, Mastercard, RuPay, American Express</p>
                               </div>
                               <CreditCard size={20} className="text-muted-foreground" />
+                            </div>
+                          </div>
+
+                          <div
+                            className={`border ${
+                              paymentMethod === "upi" ? "border-primary" : "border-border"
+                            } rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors`}
+                            onClick={() => setPaymentMethod("upi")}
+                          >
+                            <div className="flex items-center">
+                              <div className={`h-5 w-5 rounded-full border mr-3 flex items-center justify-center ${
+                                paymentMethod === "upi" ? "border-primary bg-primary/10" : "border-muted-foreground"
+                              }`}>
+                                {paymentMethod === "upi" && <Check size={12} className="text-primary" />}
+                              </div>
+                              <div className="flex-grow">
+                                <h3 className="font-medium">UPI Payment</h3>
+                                <p className="text-xs text-muted-foreground">Google Pay, PhonePe, Paytm, BHIM UPI</p>
+                              </div>
+                              <Smartphone size={20} className="text-muted-foreground" />
                             </div>
                           </div>
                           
                           <div
                             className={`border ${
-                              paymentMethod === "paypal" ? "border-primary" : "border-border"
+                              paymentMethod === "netbanking" ? "border-primary" : "border-border"
                             } rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors`}
-                            onClick={() => setPaymentMethod("paypal")}
+                            onClick={() => setPaymentMethod("netbanking")}
                           >
                             <div className="flex items-center">
                               <div className={`h-5 w-5 rounded-full border mr-3 flex items-center justify-center ${
-                                paymentMethod === "paypal" ? "border-primary bg-primary/10" : "border-muted-foreground"
+                                paymentMethod === "netbanking" ? "border-primary bg-primary/10" : "border-muted-foreground"
                               }`}>
-                                {paymentMethod === "paypal" && <Check size={12} className="text-primary" />}
+                                {paymentMethod === "netbanking" && <Check size={12} className="text-primary" />}
                               </div>
                               <div className="flex-grow">
-                                <h3 className="font-medium">PayPal</h3>
+                                <h3 className="font-medium">Net Banking</h3>
+                                <p className="text-xs text-muted-foreground">All major Indian banks supported</p>
                               </div>
                               <Wallet size={20} className="text-muted-foreground" />
+                            </div>
+                          </div>
+                          
+                          <div
+                            className={`border ${
+                              paymentMethod === "cod" ? "border-primary" : "border-border"
+                            } rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors`}
+                            onClick={() => setPaymentMethod("cod")}
+                          >
+                            <div className="flex items-center">
+                              <div className={`h-5 w-5 rounded-full border mr-3 flex items-center justify-center ${
+                                paymentMethod === "cod" ? "border-primary bg-primary/10" : "border-muted-foreground"
+                              }`}>
+                                {paymentMethod === "cod" && <Check size={12} className="text-primary" />}
+                              </div>
+                              <div className="flex-grow">
+                                <h3 className="font-medium">Cash on Delivery</h3>
+                                <p className="text-xs text-muted-foreground">Pay when you receive your order</p>
+                              </div>
+                              <CreditCard size={20} className="text-muted-foreground" />
                             </div>
                           </div>
                         </div>
@@ -528,11 +658,94 @@ const Checkout = () => {
                           </div>
                         )}
                         
-                        {/* PayPal Info */}
-                        {paymentMethod === "paypal" && (
+                        {/* UPI Form */}
+                        {paymentMethod === "upi" && (
+                          <div className="mt-6 border-t border-border pt-6">
+                            <h3 className="font-medium mb-4">UPI Details</h3>
+                            
+                            <div>
+                              <label htmlFor="upiId" className="block text-sm font-medium mb-2">
+                                UPI ID
+                              </label>
+                              <input
+                                type="text"
+                                id="upiId"
+                                name="upiId"
+                                placeholder="yourname@upi"
+                                value={upiForm.upiId}
+                                onChange={handleUpiFormChange}
+                                className="w-full rounded-lg border border-border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">Enter your UPI ID (e.g., name@okicici or name@ybl)</p>
+                            </div>
+                            
+                            <div className="mt-4 grid grid-cols-4 gap-2">
+                              <div className="p-3 border rounded-lg text-center hover:bg-muted/50 cursor-pointer">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Google_Pay_Logo.svg" alt="Google Pay" className="h-6 mx-auto mb-1" />
+                                <span className="text-xs">Google Pay</span>
+                              </div>
+                              <div className="p-3 border rounded-lg text-center hover:bg-muted/50 cursor-pointer">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/PhonePe_Logo.svg/1200px-PhonePe_Logo.svg.png" alt="PhonePe" className="h-6 mx-auto mb-1" />
+                                <span className="text-xs">PhonePe</span>
+                              </div>
+                              <div className="p-3 border rounded-lg text-center hover:bg-muted/50 cursor-pointer">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Paytm_logo.png/640px-Paytm_logo.png" alt="Paytm" className="h-6 mx-auto mb-1" />
+                                <span className="text-xs">Paytm</span>
+                              </div>
+                              <div className="p-3 border rounded-lg text-center hover:bg-muted/50 cursor-pointer">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/UPI-Logo-vector.svg/1200px-UPI-Logo-vector.svg.png" alt="BHIM UPI" className="h-6 mx-auto mb-1" />
+                                <span className="text-xs">BHIM UPI</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Net Banking Form */}
+                        {paymentMethod === "netbanking" && (
+                          <div className="mt-6 border-t border-border pt-6">
+                            <h3 className="font-medium mb-4">Net Banking</h3>
+                            
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                              <div className="p-3 border rounded-lg text-center hover:bg-muted/50 cursor-pointer">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/a/a4/State_Bank_of_India_logo.svg" alt="SBI" className="h-6 mx-auto mb-1" />
+                                <span className="text-xs">SBI</span>
+                              </div>
+                              <div className="p-3 border rounded-lg text-center hover:bg-muted/50 cursor-pointer">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/9/9f/HDFC_Bank_Logo.svg" alt="HDFC" className="h-6 mx-auto mb-1" />
+                                <span className="text-xs">HDFC Bank</span>
+                              </div>
+                              <div className="p-3 border rounded-lg text-center hover:bg-muted/50 cursor-pointer">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/2/28/ICICI_Bank_Logo.svg" alt="ICICI" className="h-6 mx-auto mb-1" />
+                                <span className="text-xs">ICICI Bank</span>
+                              </div>
+                              <div className="p-3 border rounded-lg text-center hover:bg-muted/50 cursor-pointer">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Axis_Bank_logo.svg" alt="Axis Bank" className="h-6 mx-auto mb-1" />
+                                <span className="text-xs">Axis Bank</span>
+                              </div>
+                              <div className="p-3 border rounded-lg text-center hover:bg-muted/50 cursor-pointer">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Punjab_National_Bank_Logo.svg" alt="PNB" className="h-6 mx-auto mb-1" />
+                                <span className="text-xs">PNB</span>
+                              </div>
+                              <div className="p-3 border rounded-lg text-center hover:bg-muted/50 cursor-pointer">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Kotak_Mahindra_Bank_logo.svg/1200px-Kotak_Mahindra_Bank_logo.svg.png" alt="Kotak" className="h-6 mx-auto mb-1" />
+                                <span className="text-xs">Kotak</span>
+                              </div>
+                              <div className="p-3 border rounded-lg text-center hover:bg-muted/50 cursor-pointer">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/4/4c/BOB_Blue.png" alt="Bank of Baroda" className="h-6 mx-auto mb-1" />
+                                <span className="text-xs">BOB</span>
+                              </div>
+                              <div className="p-3 border rounded-lg text-center hover:bg-muted/50 cursor-pointer">
+                                <span className="text-xs">+ More Banks</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* COD Info */}
+                        {paymentMethod === "cod" && (
                           <div className="mt-6 border-t border-border pt-6">
                             <p className="text-muted-foreground">
-                              You will be redirected to PayPal to complete your payment securely.
+                              Pay with cash upon delivery. Please keep exact change handy to help our delivery executive. Available for orders under ₹10,000.
                             </p>
                           </div>
                         )}
@@ -566,7 +779,7 @@ const Checkout = () => {
                                 </div>
                                 <div className="text-right">
                                   <span className="font-medium">
-                                    {formatPrice((item.salePrice || item.price) * item.quantity)}
+                                    ₹{((item.salePrice || item.price) * item.quantity).toFixed(2)}
                                   </span>
                                 </div>
                               </div>
@@ -614,10 +827,24 @@ const Checkout = () => {
                                 </>
                               )}
                               
-                              {paymentMethod === "paypal" && (
+                              {paymentMethod === "upi" && (
+                                <>
+                                  <Smartphone size={20} className="mr-2 text-muted-foreground" />
+                                  <span>UPI: {upiForm.upiId || "UPI Payment"}</span>
+                                </>
+                              )}
+                              
+                              {paymentMethod === "netbanking" && (
                                 <>
                                   <Wallet size={20} className="mr-2 text-muted-foreground" />
-                                  <span>PayPal</span>
+                                  <span>Net Banking</span>
+                                </>
+                              )}
+                              
+                              {paymentMethod === "cod" && (
+                                <>
+                                  <CreditCard size={20} className="mr-2 text-muted-foreground" />
+                                  <span>Cash on Delivery</span>
                                 </>
                               )}
                             </div>
@@ -688,7 +915,7 @@ const Checkout = () => {
                     </div>
                     
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Tax (7%)</span>
+                      <span className="text-muted-foreground">GST (18%)</span>
                       <span>{formatPrice(tax)}</span>
                     </div>
                     

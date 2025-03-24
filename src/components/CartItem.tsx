@@ -58,11 +58,11 @@ const CartItem: React.FC<CartItemProps> = ({ item }) => {
         <p className="text-sm text-muted-foreground">{item.weight}</p>
         <div className="flex items-center mt-1">
           <span className="font-medium text-primary">
-            ${itemPrice.toFixed(2)}
+            ₹{itemPrice.toFixed(2)}
           </span>
           {item.salePrice && (
             <span className="ml-2 text-sm text-muted-foreground line-through">
-              ${item.price.toFixed(2)}
+              ₹{item.price.toFixed(2)}
             </span>
           )}
         </div>
@@ -96,7 +96,7 @@ const CartItem: React.FC<CartItemProps> = ({ item }) => {
       
       {/* Price */}
       <div className="text-right min-w-[80px]">
-        <span className="font-bold">${totalPrice.toFixed(2)}</span>
+        <span className="font-bold">₹{totalPrice.toFixed(2)}</span>
       </div>
       
       {/* Remove button */}
