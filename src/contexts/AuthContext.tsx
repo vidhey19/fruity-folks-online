@@ -6,6 +6,7 @@ interface User {
   id: string;
   email: string;
   name: string;
+  provider?: string;
 }
 
 interface AuthContextType {
@@ -13,8 +14,11 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  loginError: string | null;
+  clearLoginError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +34,7 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user is stored in localStorage (simulating persistence)
@@ -40,27 +45,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
+  const clearLoginError = () => {
+    setLoginError(null);
+  };
+
   const login = async (email: string, password: string) => {
     // Simulate API call delay
     setIsLoading(true);
+    clearLoginError();
+    
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Mock login logic (in a real app, this would be an API call)
-      // For demo purposes, accept any email/password with basic validation
+      // Basic validation
       if (!email || !password) {
+        setLoginError("Email and password are required");
         throw new Error("Email and password are required");
       }
       
       if (password.length < 6) {
+        setLoginError("Password must be at least 6 characters");
         throw new Error("Password must be at least 6 characters");
+      }
+      
+      // For demo purposes, you might want to add a specific check to simulate incorrect credentials
+      if (email === "wrong@example.com" || password === "wrongpass") {
+        setLoginError("Invalid email or password");
+        throw new Error("Invalid email or password");
       }
       
       // Create a mock user
       const mockUser = {
         id: `user-${Date.now()}`,
         email,
-        name: email.split('@')[0]
+        name: email.split('@')[0],
+        provider: "email"
       };
       
       // Store user in localStorage (for persistence)
@@ -68,7 +87,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(mockUser);
       toast.success("Logged in successfully!");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to login");
+      const errorMessage = error instanceof Error ? error.message : "Failed to login";
+      setLoginError(errorMessage);
+      toast.error(errorMessage);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    setIsLoading(true);
+    clearLoginError();
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Simulate Google authentication
+      const mockGoogleUser = {
+        id: `google-user-${Date.now()}`,
+        email: `user${Math.floor(Math.random() * 1000)}@gmail.com`,
+        name: `Google User ${Math.floor(Math.random() * 1000)}`,
+        provider: "google"
+      };
+      
+      localStorage.setItem("user", JSON.stringify(mockGoogleUser));
+      setUser(mockGoogleUser);
+      toast.success("Logged in with Google successfully!");
+    } catch (error) {
+      const errorMessage = "Failed to log in with Google. Please try again.";
+      setLoginError(errorMessage);
+      toast.error(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);
@@ -77,23 +126,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (name: string, email: string, password: string) => {
     setIsLoading(true);
+    clearLoginError();
+    
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Mock registration validation
       if (!name || !email || !password) {
+        setLoginError("All fields are required");
         throw new Error("All fields are required");
       }
       
       if (password.length < 6) {
+        setLoginError("Password must be at least 6 characters");
         throw new Error("Password must be at least 6 characters");
+      }
+      
+      // Simulate email already in use
+      if (email === "taken@example.com") {
+        setLoginError("Email is already in use");
+        throw new Error("Email is already in use");
       }
       
       // Create new user
       const newUser = {
         id: `user-${Date.now()}`,
         email,
-        name
+        name,
+        provider: "email"
       };
       
       // Store user in localStorage
@@ -101,7 +161,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(newUser);
       toast.success("Account created successfully!");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Registration failed");
+      const errorMessage = error instanceof Error ? error.message : "Registration failed";
+      setLoginError(errorMessage);
+      toast.error(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);
@@ -121,8 +183,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         isLoading,
         login,
+        loginWithGoogle,
         register,
-        logout
+        logout,
+        loginError,
+        clearLoginError
       }}
     >
       {children}

@@ -2,37 +2,73 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import AnimatedPage from "../components/AnimatedPage";
 import { useAuth } from "../contexts/AuthContext";
-import { slideIn } from "../utils/animations";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  User,
+  LogIn,
+  UserPlus,
+  Loader2,
+  AlertCircle
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { fadeIn } from "../utils/animations";
 
 const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get("redirect") || "";
   
-  const { login, register, isAuthenticated, isLoading } = useAuth();
+  const { login, loginWithGoogle, register, isAuthenticated, isLoading, loginError, clearLoginError } = useAuth();
   const [isLoginMode, setIsLoginMode] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
-  const [formLoading, setFormLoading] = useState(false);
-  
-  // Form state
-  const [loginForm, setLoginForm] = useState({
+  const [formData, setFormData] = useState({
+    name: "",
     email: "",
     password: ""
   });
-  
-  const [registerForm, setRegisterForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: ""
-  });
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear errors when user starts typing
+    clearLoginError();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      if (isLoginMode) {
+        await login(formData.email, formData.password);
+      } else {
+        await register(formData.name, formData.email, formData.password);
+      }
+    } catch (error) {
+      // Error is already displayed via toast and stored in loginError
+      console.error("Authentication error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      await loginWithGoogle();
+    } catch (error) {
+      // Error is already displayed via toast and stored in loginError
+      console.error("Google login error:", error);
+    }
+  };
+
+  const switchMode = () => {
+    setIsLoginMode(!isLoginMode);
+    clearLoginError();
+  };
+
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
@@ -47,354 +83,196 @@ const Auth = () => {
       }
     }
   }, [isAuthenticated, isLoading, navigate, redirect]);
-  
-  const toggleMode = () => {
-    setIsLoginMode(!isLoginMode);
-  };
-  
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-  
-  const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setLoginForm(prev => ({ ...prev, [name]: value }));
-  };
-  
-  const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setRegisterForm(prev => ({ ...prev, [name]: value }));
-  };
-  
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      setFormLoading(true);
-      
-      // Form validation
-      if (!loginForm.email || !loginForm.password) {
-        toast.error("Please fill in all fields");
-        return;
-      }
-      
-      await login(loginForm.email, loginForm.password);
-      
-      // If login successful, navigate is handled by the useEffect above
-    } catch (error) {
-      console.error("Login error:", error);
-      // Error handling is done in the AuthContext
-    } finally {
-      setFormLoading(false);
-    }
-  };
-  
-  const handleRegisterSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      setFormLoading(true);
-      
-      // Form validation
-      if (!registerForm.name || !registerForm.email || !registerForm.password || !registerForm.confirmPassword) {
-        toast.error("Please fill in all fields");
-        return;
-      }
-      
-      if (registerForm.password !== registerForm.confirmPassword) {
-        toast.error("Passwords do not match");
-        return;
-      }
-      
-      await register(registerForm.name, registerForm.email, registerForm.password);
-      
-      // If registration successful, navigate is handled by the useEffect above
-    } catch (error) {
-      console.error("Registration error:", error);
-      // Error handling is done in the AuthContext
-    } finally {
-      setFormLoading(false);
-    }
-  };
-  
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-  
+
   return (
-    <div className="min-h-screen">
-      <Navbar />
-      
-      <AnimatedPage>
-        <main className="py-16">
-          <div className="container mx-auto px-4">
-            <div className="max-w-md mx-auto">
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                {/* Tabs */}
-                <div className="flex border-b border-border">
-                  <button
-                    onClick={() => setIsLoginMode(true)}
-                    className={`flex-1 py-4 text-center font-medium transition-colors ${
-                      isLoginMode
-                        ? "text-primary border-b-2 border-primary"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Sign In
-                  </button>
-                  <button
-                    onClick={() => setIsLoginMode(false)}
-                    className={`flex-1 py-4 text-center font-medium transition-colors ${
-                      !isLoginMode
-                        ? "text-primary border-b-2 border-primary"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Create Account
-                  </button>
+    <div className="min-h-screen flex items-center justify-center bg-muted/10 py-12 px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-md w-full bg-white rounded-xl shadow-sm p-8"
+      >
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-display font-bold mb-2">
+            {isLoginMode ? "Welcome Back" : "Create an Account"}
+          </h1>
+          <p className="text-muted-foreground">
+            {isLoginMode ? "Sign in to your account" : "Join Amrit Naturals for fresh produce delivery"}
+          </p>
+        </div>
+
+        {/* Error Alert */}
+        {loginError && (
+          <motion.div
+            variants={fadeIn("up", 0.1)}
+            initial="hidden"
+            animate="show"
+            className="mb-6 p-4 border border-red-200 bg-red-50 text-red-700 rounded-lg flex items-start"
+          >
+            <AlertCircle className="h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
+            <span>{loginError}</span>
+          </motion.div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {!isLoginMode && (
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium mb-2">
+                Full Name
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User size={18} className="text-muted-foreground" />
                 </div>
-                
-                <div className="p-6">
-                  {/* Login Form */}
-                  {isLoginMode && (
-                    <motion.div
-                      variants={slideIn("right", "tween", 0, 0.3)}
-                      initial="hidden"
-                      animate="show"
-                    >
-                      <h2 className="text-2xl font-display font-bold mb-6">Welcome Back</h2>
-                      
-                      <form onSubmit={handleLoginSubmit} className="space-y-4">
-                        <div>
-                          <label htmlFor="login-email" className="block text-sm font-medium mb-2">
-                            Email Address
-                          </label>
-                          <input
-                            type="email"
-                            id="login-email"
-                            name="email"
-                            value={loginForm.email}
-                            onChange={handleLoginChange}
-                            className="w-full rounded-lg border border-border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="login-password" className="block text-sm font-medium mb-2">
-                            Password
-                          </label>
-                          <div className="relative">
-                            <input
-                              type={showPassword ? "text" : "password"}
-                              id="login-password"
-                              name="password"
-                              value={loginForm.password}
-                              onChange={handleLoginChange}
-                              className="w-full rounded-lg border border-border px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                              required
-                            />
-                            <button
-                              type="button"
-                              onClick={togglePasswordVisibility}
-                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            >
-                              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                            </button>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              id="remember-me"
-                              className="h-4 w-4 rounded border-border text-primary focus:ring-primary/20"
-                            />
-                            <label htmlFor="remember-me" className="ml-2 block text-sm text-muted-foreground">
-                              Remember me
-                            </label>
-                          </div>
-                          
-                          <a href="#" className="text-sm text-primary hover:text-primary/80">
-                            Forgot password?
-                          </a>
-                        </div>
-                        
-                        <button
-                          type="submit"
-                          disabled={formLoading}
-                          className="btn-primary w-full flex items-center justify-center"
-                        >
-                          {formLoading ? (
-                            <>
-                              <Loader2 size={18} className="mr-2 animate-spin" />
-                              Signing In...
-                            </>
-                          ) : (
-                            "Sign In"
-                          )}
-                        </button>
-                      </form>
-                      
-                      <div className="mt-6 text-center">
-                        <p className="text-sm text-muted-foreground">
-                          Don't have an account?{" "}
-                          <button
-                            type="button"
-                            onClick={toggleMode}
-                            className="text-primary hover:text-primary/80 font-medium"
-                          >
-                            Create one
-                          </button>
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                  
-                  {/* Register Form */}
-                  {!isLoginMode && (
-                    <motion.div
-                      variants={slideIn("left", "tween", 0, 0.3)}
-                      initial="hidden"
-                      animate="show"
-                    >
-                      <h2 className="text-2xl font-display font-bold mb-6">Create an Account</h2>
-                      
-                      <form onSubmit={handleRegisterSubmit} className="space-y-4">
-                        <div>
-                          <label htmlFor="register-name" className="block text-sm font-medium mb-2">
-                            Full Name
-                          </label>
-                          <input
-                            type="text"
-                            id="register-name"
-                            name="name"
-                            value={registerForm.name}
-                            onChange={handleRegisterChange}
-                            className="w-full rounded-lg border border-border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="register-email" className="block text-sm font-medium mb-2">
-                            Email Address
-                          </label>
-                          <input
-                            type="email"
-                            id="register-email"
-                            name="email"
-                            value={registerForm.email}
-                            onChange={handleRegisterChange}
-                            className="w-full rounded-lg border border-border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="register-password" className="block text-sm font-medium mb-2">
-                            Password
-                          </label>
-                          <div className="relative">
-                            <input
-                              type={showPassword ? "text" : "password"}
-                              id="register-password"
-                              name="password"
-                              value={registerForm.password}
-                              onChange={handleRegisterChange}
-                              className="w-full rounded-lg border border-border px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                              required
-                            />
-                            <button
-                              type="button"
-                              onClick={togglePasswordVisibility}
-                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            >
-                              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                            </button>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Password must be at least 6 characters long
-                          </p>
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="register-confirm-password" className="block text-sm font-medium mb-2">
-                            Confirm Password
-                          </label>
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            id="register-confirm-password"
-                            name="confirmPassword"
-                            value={registerForm.confirmPassword}
-                            onChange={handleRegisterChange}
-                            className="w-full rounded-lg border border-border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            required
-                          />
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id="terms"
-                            className="h-4 w-4 rounded border-border text-primary focus:ring-primary/20"
-                            required
-                          />
-                          <label htmlFor="terms" className="ml-2 block text-sm text-muted-foreground">
-                            I agree to the{" "}
-                            <a href="#" className="text-primary hover:text-primary/80">
-                              Terms of Service
-                            </a>{" "}
-                            and{" "}
-                            <a href="#" className="text-primary hover:text-primary/80">
-                              Privacy Policy
-                            </a>
-                          </label>
-                        </div>
-                        
-                        <button
-                          type="submit"
-                          disabled={formLoading}
-                          className="btn-primary w-full flex items-center justify-center"
-                        >
-                          {formLoading ? (
-                            <>
-                              <Loader2 size={18} className="mr-2 animate-spin" />
-                              Creating Account...
-                            </>
-                          ) : (
-                            "Create Account"
-                          )}
-                        </button>
-                      </form>
-                      
-                      <div className="mt-6 text-center">
-                        <p className="text-sm text-muted-foreground">
-                          Already have an account?{" "}
-                          <button
-                            type="button"
-                            onClick={toggleMode}
-                            className="text-primary hover:text-primary/80 font-medium"
-                          >
-                            Sign in
-                          </button>
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                </div>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  placeholder="Your full name"
+                  required={!isLoginMode}
+                />
               </div>
             </div>
+          )}
+          
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium mb-2">
+              Email Address
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail size={18} className="text-muted-foreground" />
+              </div>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                placeholder="Your email address"
+                required
+              />
+            </div>
           </div>
-        </main>
-      </AnimatedPage>
-      
-      <Footer />
+          
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label htmlFor="password" className="block text-sm font-medium">
+                Password
+              </label>
+              {isLoginMode && (
+                <a href="#" className="text-sm text-primary hover:text-primary/80">
+                  Forgot password?
+                </a>
+              )}
+            </div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock size={18} className="text-muted-foreground" />
+              </div>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                placeholder={isLoginMode ? "Your password" : "Create a password (min. 6 characters)"}
+                required
+                minLength={6}
+              />
+            </div>
+          </div>
+          
+          <Button
+            type="submit"
+            className="w-full py-2 h-auto"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 size={18} className="mr-2 animate-spin" />
+                {isLoginMode ? "Signing in..." : "Creating account..."}
+              </>
+            ) : (
+              <>
+                {isLoginMode ? (
+                  <>
+                    <LogIn size={18} className="mr-2" />
+                    Sign In
+                  </>
+                ) : (
+                  <>
+                    <UserPlus size={18} className="mr-2" />
+                    Create Account
+                  </>
+                )}
+              </>
+            )}
+          </Button>
+        </form>
+        
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+          
+          <div className="mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleGoogleLogin}
+              disabled={isSubmitting}
+            >
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                <path
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  fill="#4285F4"
+                />
+                <path
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  fill="#34A853"
+                />
+                <path
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  fill="#FBBC05"
+                />
+                <path
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  fill="#EA4335"
+                />
+              </svg>
+              Continue with Google
+            </Button>
+          </div>
+        </div>
+        
+        <div className="mt-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            {isLoginMode ? "Don't have an account?" : "Already have an account?"}
+            <button
+              type="button"
+              onClick={switchMode}
+              className="ml-1 text-primary hover:text-primary/80 font-medium"
+            >
+              {isLoginMode ? "Sign up" : "Sign in"}
+            </button>
+          </p>
+        </div>
+      </motion.div>
     </div>
   );
 };

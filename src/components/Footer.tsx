@@ -18,8 +18,8 @@ const Footer = () => {
           {/* Company Info */}
           <motion.div variants={fadeIn("up")} className="space-y-4">
             <div className="flex items-center">
-              <span className="text-2xl font-display font-bold text-primary">Mango</span>
-              <span className="text-2xl font-display font-bold text-leaf-600">Marvel</span>
+              <span className="text-2xl font-display font-bold text-primary">Amrit</span>
+              <span className="text-2xl font-display font-bold text-leaf-600">Naturals</span>
             </div>
             <p className="text-muted-foreground">
               Delivering the finest quality mangoes and fresh produce directly to your doorstep. 
@@ -126,16 +126,16 @@ const Footer = () => {
               <li className="flex items-start">
                 <MapPin size={18} className="mr-2 mt-1 text-primary" />
                 <span className="text-muted-foreground">
-                  123 Orchard Way, Fruitville, CA 90210
+                  123 Orchard Way, Mumbai, Maharashtra 400001
                 </span>
               </li>
               <li className="flex items-center">
                 <Phone size={18} className="mr-2 text-primary" />
-                <span className="text-muted-foreground">+1 (555) 123-4567</span>
+                <span className="text-muted-foreground">+91 98765 43210</span>
               </li>
               <li className="flex items-center">
                 <Mail size={18} className="mr-2 text-primary" />
-                <span className="text-muted-foreground">hello@mangomarvel.com</span>
+                <span className="text-muted-foreground">hello@amritnaturals.com</span>
               </li>
             </ul>
           </motion.div>
@@ -172,7 +172,7 @@ const Footer = () => {
 
         {/* Copyright */}
         <div className="mt-16 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Mango Marvel. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Amrit Naturals. All rights reserved.</p>
         </div>
       </motion.div>
     </footer>

@@ -63,8 +63,8 @@ const Navbar = () => {
         <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <span className="text-2xl font-display font-bold text-primary">Mango</span>
-            <span className="text-2xl font-display font-bold text-leaf-600">Marvel</span>
+            <span className="text-2xl font-display font-bold text-primary">Amrit</span>
+            <span className="text-2xl font-display font-bold text-leaf-600">Naturals</span>
           </Link>
 
           {/* Desktop Navigation */}

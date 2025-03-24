@@ -71,10 +71,10 @@ const Index = () => {
               Premium Quality
             </span>
             <h1 className="text-5xl md:text-6xl font-display font-bold mb-4">
-              The Finest Mangoes Delivered to Your Door
+              The Finest Produce from Amrit Naturals
             </h1>
             <p className="text-xl opacity-90 mb-8">
-              Experience the exquisite taste of hand-picked, premium mangoes from the finest orchards around the world.
+              Experience the exquisite taste of hand-picked, premium mangoes and fresh produce from the finest orchards around India.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link to="/shop" className="btn-primary">
@@ -114,7 +114,7 @@ const Index = () => {
               </div>
               <h3 className="font-display font-bold text-lg mb-2">Free Shipping</h3>
               <p className="text-muted-foreground">
-                Enjoy free shipping on all orders over $50. Your satisfaction is our priority.
+                Enjoy free shipping on all orders over ₹500. Your satisfaction is our priority.
               </p>
             </motion.div>
             
@@ -147,7 +147,7 @@ const Index = () => {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-display font-bold mb-4">Shop by Category</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Explore our selection of fresh fruits and vegetables sourced from the best farms around the world.
+              Explore our selection of fresh fruits and vegetables sourced from the best farms around India.
             </p>
           </div>
           
@@ -161,8 +161,15 @@ const Index = () => {
                 viewport={{ once: true, amount: 0.25 }}
                 className="relative h-64 rounded-xl overflow-hidden group cursor-pointer hover-scale"
               >
+                {/* Use specific images for each category */}
                 <img
-                  src={`https://source.unsplash.com/random/600x400/?${category.id}`}
+                  src={
+                    category.id === "mangoes" 
+                      ? "https://images.unsplash.com/photo-1553279768-865429fa0078?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80" 
+                      : category.id === "fruits" 
+                      ? "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80" 
+                      : "https://images.unsplash.com/photo-1466637574441-749b8f19452f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
+                  }
                   alt={category.name}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
@@ -229,8 +236,8 @@ const Index = () => {
           className="absolute right-0 bottom-0 w-1/2 h-full hidden md:block"
         >
           <img
-            src="https://images.unsplash.com/photo-1519096845289-95806ee03a1a?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
-            alt="Mango"
+            src="https://images.unsplash.com/photo-1590165482129-1b8b27698780?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
+            alt="Alphonso Mangoes"
             className="w-full h-full object-cover"
           />
         </motion.div>
@@ -303,7 +310,7 @@ const Index = () => {
               What Our Customers Say
             </motion.h2>
             <motion.p variants={fadeIn("up", 0.1)} className="text-muted-foreground max-w-2xl mx-auto">
-              Don't just take our word for it - here's what our customers have to say about their experience with Mango Marvel.
+              Don't just take our word for it - here's what our customers have to say about their experience with Amrit Naturals.
             </motion.p>
           </div>
           
