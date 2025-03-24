@@ -1,10 +1,11 @@
 
 import { useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ProductCard from "../components/ProductCard";
+import PhotoCarousel from "../components/PhotoCarousel";
 import { 
   getFeaturedProducts, 
   getBestSellerProducts, 
@@ -25,8 +26,17 @@ import {
 } from "lucide-react";
 
 const Index = () => {
+  const navigate = useNavigate();
   const featuredProducts = getFeaturedProducts();
   const bestSellerProducts = getBestSellerProducts();
+  
+  // Carousel images
+  const carouselImages = [
+    "https://images.unsplash.com/photo-1623930188143-092a288a8fb7?ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80",
+    "https://images.unsplash.com/photo-1550258987-190a2d41a8ba?ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80",
+    "https://images.unsplash.com/photo-1577234286642-fc512a5f8f77?ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80",
+    "https://images.unsplash.com/photo-1546548970-71785318a17b?ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80"
+  ];
   
   // Parallax scrolling effect
   const targetRef = useRef<HTMLDivElement>(null);
@@ -42,6 +52,11 @@ const Index = () => {
     window.scrollTo(0, 0);
   }, []);
 
+  // Handle category click
+  const handleCategoryClick = (categoryId: string) => {
+    navigate(`/shop?category=${categoryId}`);
+  };
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -52,11 +67,9 @@ const Index = () => {
           style={{ y, opacity }}
           className="absolute inset-0 z-0"
         >
-          <img
-            src="https://images.unsplash.com/photo-1623930188143-092a288a8fb7?ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80"
-            alt="Fresh mangoes"
-            className="w-full h-full object-cover"
-          />
+          <div className="w-full h-full">
+            <PhotoCarousel images={carouselImages} />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/20"></div>
         </motion.div>
         
@@ -160,6 +173,7 @@ const Index = () => {
                 whileInView="show"
                 viewport={{ once: true, amount: 0.25 }}
                 className="relative h-64 rounded-xl overflow-hidden group cursor-pointer hover-scale"
+                onClick={() => handleCategoryClick(category.id)}
               >
                 {/* Use specific images for each category */}
                 <img
@@ -176,12 +190,11 @@ const Index = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                   <h3 className="text-xl font-display font-bold text-white mb-2">{category.name}</h3>
-                  <Link 
-                    to={`/shop?category=${category.id}`}
+                  <span 
                     className="inline-flex items-center text-white/90 hover:text-white"
                   >
                     Shop Now <ChevronRight size={16} className="ml-1" />
-                  </Link>
+                  </span>
                 </div>
               </motion.div>
             ))}

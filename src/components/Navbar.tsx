@@ -15,6 +15,7 @@ import {
   LogIn
 } from "lucide-react";
 import { Button } from "./ui/button";
+import SearchWithSuggestions from "./SearchWithSuggestions";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -40,6 +41,8 @@ const Navbar = () => {
   useEffect(() => {
     // Close mobile menu when route changes
     setIsMobileMenuOpen(false);
+    // Close search when route changes
+    setIsSearchOpen(false);
   }, [location.pathname]);
 
   const toggleMobileMenu = () => {
@@ -146,7 +149,7 @@ const Navbar = () => {
           </div>
         </nav>
 
-        {/* Search Bar (conditionally rendered) */}
+        {/* Search Bar */}
         <AnimatePresence>
           {isSearchOpen && (
             <motion.div
@@ -156,22 +159,7 @@ const Navbar = () => {
               className="w-full bg-white shadow-sm"
             >
               <div className="container mx-auto px-4 py-3">
-                <form className="flex items-center">
-                  <Search size={20} className="mr-2 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Search for products..."
-                    className="w-full bg-transparent border-none outline-none focus:ring-0"
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    onClick={toggleSearch}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X size={20} />
-                  </button>
-                </form>
+                <SearchWithSuggestions onClose={toggleSearch} />
               </div>
             </motion.div>
           )}

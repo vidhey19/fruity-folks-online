@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -61,6 +60,13 @@ const Shop = () => {
     // Update URL params
     setSearchParams({ category: selectedCategory });
   }, [selectedCategory, searchQuery, sortBy, priceRange, setSearchParams]);
+  
+  // Initialize with maximum price range 
+  useEffect(() => {
+    // Set initial price range to include all products
+    const maxPrice = Math.max(...products.map(p => p.price)) + 5;
+    setPriceRange([0, maxPrice]);
+  }, []);
   
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId);

@@ -1,4 +1,3 @@
-
 export type Product = {
   id: number;
   name: string;
@@ -14,6 +13,8 @@ export type Product = {
   weight: string;
   origin: string;
 };
+
+export type SearchResult = Pick<Product, 'id' | 'name' | 'price' | 'salePrice' | 'image' | 'category'>;
 
 export const products: Product[] = [
   {
@@ -216,12 +217,16 @@ export const getRelatedProducts = (productId: number) => {
     .slice(0, 4);
 };
 
-export const searchProducts = (query: string) => {
+export const searchProducts = (query: string): SearchResult[] => {
   const searchTerm = query.toLowerCase();
   
-  return products.filter(product => 
-    product.name.toLowerCase().includes(searchTerm) || 
-    product.description.toLowerCase().includes(searchTerm) ||
-    product.tags.some(tag => tag.toLowerCase().includes(searchTerm))
-  );
+  return products
+    .filter(product => 
+      product.name.toLowerCase().includes(searchTerm) || 
+      product.description.toLowerCase().includes(searchTerm) ||
+      product.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+    )
+    .map(({ id, name, price, salePrice, image, category }) => ({
+      id, name, price, salePrice, image, category
+    }));
 };
