@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -12,21 +13,22 @@ import { Filter, Search, X, ChevronDown } from "lucide-react";
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get("category") || "all";
+  const searchQuery = searchParams.get("search") || "";
   
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
   const [showFilter, setShowFilter] = useState(false);
   const [sortBy, setSortBy] = useState("featured");
-  const [priceRange, setPriceRange] = useState([0, 50]);
+  const [priceRange, setPriceRange] = useState([0, 1000]); // Set a reasonable default max
   
   // Filter products when category or search changes
   useEffect(() => {
     let filtered = getProductsByCategory(selectedCategory);
     
     // Apply search filter if query exists
-    if (searchQuery) {
-      filtered = searchProducts(searchQuery).filter(
+    if (localSearchQuery) {
+      filtered = searchProducts(localSearchQuery).filter(
         product => selectedCategory === "all" || product.category === selectedCategory
       );
     }
@@ -58,15 +60,23 @@ const Shop = () => {
     setFilteredProducts(filtered);
     
     // Update URL params
-    setSearchParams({ category: selectedCategory });
-  }, [selectedCategory, searchQuery, sortBy, priceRange, setSearchParams]);
+    const params: { [key: string]: string } = {};
+    if (selectedCategory !== "all") params.category = selectedCategory;
+    if (localSearchQuery) params.search = localSearchQuery;
+    setSearchParams(params);
+  }, [selectedCategory, localSearchQuery, sortBy, priceRange, setSearchParams]);
   
   // Initialize with maximum price range 
   useEffect(() => {
     // Set initial price range to include all products
     const maxPrice = Math.max(...products.map(p => p.price)) + 5;
     setPriceRange([0, maxPrice]);
-  }, []);
+    
+    // If there's a search query from URL, update the local state
+    if (searchQuery) {
+      setLocalSearchQuery(searchQuery);
+    }
+  }, [searchQuery]);
   
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId);
@@ -77,11 +87,11 @@ const Shop = () => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
     const query = formData.get("search") as string;
-    setSearchQuery(query);
+    setLocalSearchQuery(query);
   };
   
   const clearSearch = () => {
-    setSearchQuery("");
+    setLocalSearchQuery("");
   };
   
   const toggleFilter = () => {
@@ -172,11 +182,11 @@ const Shop = () => {
                       type="text"
                       name="search"
                       placeholder="Search products..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      value={localSearchQuery}
+                      onChange={(e) => setLocalSearchQuery(e.target.value)}
                       className="w-full px-4 py-2 pr-10 rounded-full border border-border focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
-                    {searchQuery ? (
+                    {localSearchQuery ? (
                       <button
                         type="button"
                         onClick={clearSearch}
@@ -303,7 +313,7 @@ const Shop = () => {
                     <button
                       onClick={() => {
                         setSelectedCategory("all");
-                        setSearchQuery("");
+                        setLocalSearchQuery("");
                         setPriceRange([0, maxPrice]);
                       }}
                       className="btn-primary"
