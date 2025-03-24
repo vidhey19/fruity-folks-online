@@ -13,7 +13,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/";
+  const redirect = searchParams.get("redirect") || "";
   
   const { login, register, isAuthenticated, isLoading } = useAuth();
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -36,7 +36,15 @@ const Auth = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      navigate(redirect === "checkout" ? "/checkout" : `/${redirect}`);
+      // Fix the redirect logic to ensure valid URLs
+      if (redirect === "checkout") {
+        navigate("/checkout");
+      } else if (redirect) {
+        // Ensure we have a leading slash for the path
+        navigate(`/${redirect.startsWith("/") ? redirect.substring(1) : redirect}`);
+      } else {
+        navigate("/");
+      }
     }
   }, [isAuthenticated, isLoading, navigate, redirect]);
   
