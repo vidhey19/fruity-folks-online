@@ -1,137 +1,103 @@
 
-import React from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ShoppingBag, Plus, Minus } from "lucide-react";
 import { Product } from "../data/products";
 import { useCart } from "../contexts/CartContext";
-import { Badge } from "./ui/badge";
+import { useCurrency } from "../contexts/CurrencyContext";
+import { ShoppingCart, Heart } from "lucide-react";
+import { toast } from "sonner";
 
-interface ProductCardProps {
-  product: Product;
-}
-
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { addToCart, cart, updateQuantity } = useCart();
+const ProductCard = ({ product }: { product: Product }) => {
+  const { addToCart } = useCart();
+  const { formatPrice } = useCurrency();
   
-  // Check if product is in cart and get quantity
-  const productInCart = cart.items.find(item => item.id === product.id);
-  const quantityInCart = productInCart ? productInCart.quantity : 0;
-
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
     addToCart(product, 1);
   };
-
-  const handleIncreaseQuantity = (e: React.MouseEvent) => {
+  
+  const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (productInCart) {
-      updateQuantity(product.id, productInCart.quantity + 1);
-    } else {
-      addToCart(product, 1);
-    }
+    
+    toast.success(`${product.name} added to wishlist`);
   };
-
-  const handleDecreaseQuantity = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (productInCart && productInCart.quantity > 0) {
-      updateQuantity(product.id, productInCart.quantity - 1);
-    }
-  };
-
-  const discountPercentage = product.salePrice 
-    ? Math.round(((product.price - product.salePrice) / product.price) * 100) 
-    : 0;
+  
+  const discount = product.salePrice
+    ? Math.round(((product.price - product.salePrice) / product.price) * 100)
+    : null;
 
   return (
-    <Link to={`/product/${product.id}`}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col relative"
-      >
-        {/* Discount badge */}
-        {product.salePrice && (
-          <div className="absolute top-3 left-3 z-10">
-            <Badge variant="destructive" className="font-semibold">
-              {discountPercentage}% OFF
-            </Badge>
-          </div>
-        )}
-        
-        {/* Cart quantity badge */}
-        {quantityInCart > 0 && (
-          <div className="absolute top-3 right-3 z-10">
-            <Badge variant="secondary" className="font-semibold bg-primary text-white">
-              {quantityInCart} in cart
-            </Badge>
-          </div>
-        )}
-        
-        <div className="aspect-square overflow-hidden bg-gray-50 relative">
-          <img 
-            src={product.image} 
+    <Link to={`/product/${product.id}`} className="group">
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden transition-all hover:shadow-md h-full flex flex-col">
+        {/* Card Image */}
+        <div className="relative">
+          <img
+            src={product.image}
             alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-56 object-cover transition-transform group-hover:scale-105"
           />
           
-          {/* Quantity controls */}
-          <div className="absolute bottom-3 right-3 flex items-center bg-white/90 backdrop-blur-sm rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-            {quantityInCart > 0 ? (
-              <>
-                <button
-                  onClick={handleDecreaseQuantity}
-                  className="h-8 w-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded-l-full"
-                  aria-label="Decrease quantity"
-                >
-                  <Minus size={16} />
-                </button>
-                <span className="w-6 text-center text-sm font-medium">{quantityInCart}</span>
-                <button
-                  onClick={handleIncreaseQuantity}
-                  className="h-8 w-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded-r-full"
-                  aria-label="Increase quantity"
-                >
-                  <Plus size={16} />
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={handleAddToCart}
-                className="h-8 flex items-center justify-center px-3 text-primary hover:bg-primary/10 rounded-full"
-                aria-label="Add to cart"
-              >
-                <ShoppingBag size={16} className="mr-1" />
-                <span className="text-xs font-medium">Add</span>
-              </button>
+          {/* Badges */}
+          <div className="absolute top-3 left-3 flex flex-col gap-2">
+            {product.bestSeller && (
+              <span className="bg-amber-500 text-white text-xs font-medium px-2 py-1 rounded-full">
+                Best Seller
+              </span>
+            )}
+            
+            {discount && (
+              <span className="bg-primary text-white text-xs font-medium px-2 py-1 rounded-full">
+                {discount}% Off
+              </span>
             )}
           </div>
         </div>
         
-        <div className="p-4 flex-grow flex flex-col justify-between">
-          <div>
-            <h3 className="font-medium line-clamp-2">{product.name}</h3>
-            <p className="text-sm text-muted-foreground">{product.weight}</p>
+        {/* Card Content */}
+        <div className="p-4 flex flex-col flex-grow">
+          <div className="mb-1">
+            <span className="text-xs text-muted-foreground capitalize">{product.category}</span>
           </div>
           
-          <div className="mt-3 flex items-center">
-            {product.salePrice ? (
-              <>
-                <span className="font-semibold text-primary">₹{product.salePrice.toFixed(2)}</span>
-                <span className="ml-2 text-sm text-muted-foreground line-through">
-                  ₹{product.price.toFixed(2)}
+          <h3 className="font-medium text-lg mb-2 line-clamp-1">{product.name}</h3>
+          
+          <div className="mt-auto">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">
+                  {formatPrice(product.salePrice || product.price)}
                 </span>
-              </>
-            ) : (
-              <span className="font-semibold text-primary">₹{product.price.toFixed(2)}</span>
-            )}
+                
+                {product.salePrice && (
+                  <span className="text-muted-foreground line-through text-sm">
+                    {formatPrice(product.price)}
+                  </span>
+                )}
+              </div>
+              
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                <button
+                  onClick={handleWishlist}
+                  className="p-2 rounded-full bg-muted/50 hover:bg-muted"
+                  aria-label="Add to wishlist"
+                >
+                  <Heart size={16} />
+                </button>
+                
+                <button
+                  onClick={handleAddToCart}
+                  className="p-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary"
+                  aria-label="Add to cart"
+                >
+                  <ShoppingCart size={16} />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </Link>
   );
 };

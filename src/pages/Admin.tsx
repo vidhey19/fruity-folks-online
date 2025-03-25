@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -5,7 +6,10 @@ import { useAuth } from "../contexts/AuthContext";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import AnimatedPage from "../components/AnimatedPage";
+import { useCurrency } from "../contexts/CurrencyContext";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { 
   FileSpreadsheet, 
   Users, 
@@ -22,9 +26,14 @@ import {
   Search,
   Link,
   KeyRound,
-  CheckCircle2
+  CheckCircle2,
+  Image as ImageIcon,
+  Tag,
+  DollarSign,
+  BarChart,
+  Plus
 } from "lucide-react";
-import { products } from "../data/products";
+import { products as productsData, Product } from "../data/products";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -33,6 +42,9 @@ const Admin = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   
   const [googleApiKey, setGoogleApiKey] = useState("");
   const [googleSheetId, setGoogleSheetId] = useState("");
@@ -47,6 +59,27 @@ const Admin = () => {
     messagingSenderId: "",
     appId: ""
   });
+
+  // Product Management States
+  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [newProduct, setNewProduct] = useState<Partial<Product>>({
+    name: "",
+    category: "fruits",
+    price: 0,
+    salePrice: undefined,
+    image: "",
+    description: "",
+    tags: [],
+    featured: false,
+    bestSeller: false,
+    stock: 0,
+    weight: "",
+    origin: ""
+  });
+  const [newTag, setNewTag] = useState("");
+  
+  const { formatPrice } = useCurrency();
 
   const orders = [
     { id: "ORD-001", customer: "Raj Kumar", date: "2023-06-15", total: 1499, status: "Delivered" },
@@ -75,6 +108,9 @@ const Admin = () => {
       return;
     }
 
+    // Initialize products from the data file
+    setProducts(productsData);
+
     if (searchQuery) {
       const filtered = orders.filter(
         order => 
@@ -101,6 +137,14 @@ const Admin = () => {
       setFirebaseConfig(JSON.parse(savedFirebaseConfig));
     }
   }, [isAuthenticated, isAdmin, navigate, searchQuery, orders]);
+
+  // Handle pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentProducts = products.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(products.length / itemsPerPage);
+
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
   const handleExportToGoogleSheets = () => {
     if (!isConnected) {
@@ -148,12 +192,84 @@ const Admin = () => {
     toast.success("Firebase configuration saved successfully!");
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 2
-    }).format(price);
+  // Product management functions
+  const openProductDialog = (product?: Product) => {
+    if (product) {
+      setEditingProduct(product);
+      setNewProduct({...product});
+    } else {
+      setEditingProduct(null);
+      setNewProduct({
+        name: "",
+        category: "fruits",
+        price: 0,
+        salePrice: undefined,
+        image: "",
+        description: "",
+        tags: [],
+        featured: false,
+        bestSeller: false,
+        stock: 0,
+        weight: "",
+        origin: ""
+      });
+    }
+    setIsProductDialogOpen(true);
+  };
+
+  const handleAddTag = () => {
+    if (newTag && !newProduct.tags?.includes(newTag)) {
+      setNewProduct({
+        ...newProduct,
+        tags: [...(newProduct.tags || []), newTag]
+      });
+      setNewTag("");
+    }
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setNewProduct({
+      ...newProduct,
+      tags: newProduct.tags?.filter(t => t !== tag) || []
+    });
+  };
+
+  const handleSaveProduct = () => {
+    if (!newProduct.name || !newProduct.description || !newProduct.image) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    if (editingProduct) {
+      // Update existing product
+      const updatedProducts = products.map(p => 
+        p.id === editingProduct.id ? {...newProduct, id: editingProduct.id} as Product : p
+      );
+      setProducts(updatedProducts);
+      toast.success("Product updated successfully!");
+    } else {
+      // Add new product
+      const newId = Math.max(...products.map(p => p.id)) + 1;
+      const fullProduct = {
+        ...newProduct,
+        id: newId,
+        tags: newProduct.tags || [],
+        featured: newProduct.featured || false,
+        bestSeller: newProduct.bestSeller || false
+      } as Product;
+      
+      setProducts([...products, fullProduct]);
+      toast.success("Product added successfully!");
+    }
+    
+    setIsProductDialogOpen(false);
+  };
+
+  const handleDeleteProduct = (productId: number) => {
+    if (confirm("Are you sure you want to delete this product?")) {
+      setProducts(products.filter(p => p.id !== productId));
+      toast.success("Product deleted successfully!");
+    }
   };
 
   return (
@@ -396,7 +512,10 @@ const Admin = () => {
                   <div>
                     <div className="flex justify-between items-center mb-6">
                       <h2 className="text-xl font-semibold">All Products</h2>
-                      <button className="btn-primary flex items-center gap-2">
+                      <button 
+                        className="btn-primary flex items-center gap-2"
+                        onClick={() => openProductDialog()}
+                      >
                         <FilePlus size={16} />
                         Add Product
                       </button>
@@ -415,7 +534,7 @@ const Admin = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {products.map((product, index) => (
+                          {currentProducts.map((product, index) => (
                             <tr key={index} className="border-t border-gray-200">
                               <td className="px-4 py-3">
                                 <div className="flex items-center">
@@ -459,10 +578,16 @@ const Admin = () => {
                               </td>
                               <td className="px-4 py-3">
                                 <div className="flex gap-2">
-                                  <button className="text-gray-500 hover:text-primary">
+                                  <button 
+                                    className="text-gray-500 hover:text-primary"
+                                    onClick={() => openProductDialog(product)}
+                                  >
                                     <Edit size={16} />
                                   </button>
-                                  <button className="text-gray-500 hover:text-red-500">
+                                  <button 
+                                    className="text-gray-500 hover:text-red-500"
+                                    onClick={() => handleDeleteProduct(product.id)}
+                                  >
                                     <Trash2 size={16} />
                                   </button>
                                 </div>
@@ -472,6 +597,51 @@ const Admin = () => {
                         </tbody>
                       </table>
                     </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex justify-center mt-6">
+                        <nav className="flex items-center gap-1">
+                          <button
+                            onClick={() => paginate(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1}
+                            className={`px-3 py-1 rounded ${
+                              currentPage === 1 
+                                ? "text-gray-400 cursor-not-allowed" 
+                                : "text-gray-600 hover:bg-gray-100"
+                            }`}
+                          >
+                            Previous
+                          </button>
+                          
+                          {Array.from({ length: totalPages }).map((_, index) => (
+                            <button
+                              key={index}
+                              onClick={() => paginate(index + 1)}
+                              className={`px-3 py-1 rounded ${
+                                currentPage === index + 1
+                                  ? "bg-primary text-white"
+                                  : "text-gray-600 hover:bg-gray-100"
+                              }`}
+                            >
+                              {index + 1}
+                            </button>
+                          ))}
+                          
+                          <button
+                            onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
+                            disabled={currentPage === totalPages}
+                            className={`px-3 py-1 rounded ${
+                              currentPage === totalPages
+                                ? "text-gray-400 cursor-not-allowed"
+                                : "text-gray-600 hover:bg-gray-100"
+                            }`}
+                          >
+                            Next
+                          </button>
+                        </nav>
+                      </div>
+                    )}
                   </div>
                 )}
                 
@@ -655,9 +825,249 @@ const Admin = () => {
       </AnimatedPage>
       
       <Footer />
+
+      {/* Product Form Dialog */}
+      <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium flex items-center mb-1.5">
+                  <Tag size={16} className="mr-2 text-gray-500" />
+                  Product Name *
+                </label>
+                <input
+                  type="text"
+                  value={newProduct.name}
+                  onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Enter product name"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium flex items-center mb-1.5">
+                  <BarChart size={16} className="mr-2 text-gray-500" />
+                  Category *
+                </label>
+                <select
+                  value={newProduct.category}
+                  onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="mangoes">Mangoes</option>
+                  <option value="fruits">Other Fruits</option>
+                  <option value="vegetables">Vegetables</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium flex items-center mb-1.5">
+                  <DollarSign size={16} className="mr-2 text-gray-500" />
+                  Price *
+                </label>
+                <input
+                  type="number"
+                  value={newProduct.price}
+                  onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value) || 0})}
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Regular price"
+                  min="0"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium flex items-center mb-1.5">
+                  <DollarSign size={16} className="mr-2 text-gray-500" />
+                  Sale Price (optional)
+                </label>
+                <input
+                  type="number"
+                  value={newProduct.salePrice || ""}
+                  onChange={(e) => {
+                    const value = e.target.value ? parseFloat(e.target.value) : undefined;
+                    setNewProduct({...newProduct, salePrice: value});
+                  }}
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Sale price (if any)"
+                  min="0"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium flex items-center mb-1.5">
+                  <Package size={16} className="mr-2 text-gray-500" />
+                  Stock *
+                </label>
+                <input
+                  type="number"
+                  value={newProduct.stock}
+                  onChange={(e) => setNewProduct({...newProduct, stock: parseInt(e.target.value) || 0})}
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Available stock"
+                  min="0"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium flex items-center mb-1.5">
+                  Weight
+                </label>
+                <input
+                  type="text"
+                  value={newProduct.weight}
+                  onChange={(e) => setNewProduct({...newProduct, weight: e.target.value})}
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. 500g, 1kg"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium flex items-center mb-1.5">
+                  Origin
+                </label>
+                <input
+                  type="text"
+                  value={newProduct.origin}
+                  onChange={(e) => setNewProduct({...newProduct, origin: e.target.value})}
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Country/Region of origin"
+                />
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="featured"
+                    checked={newProduct.featured || false}
+                    onChange={(e) => setNewProduct({...newProduct, featured: e.target.checked})}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/25"
+                  />
+                  <label htmlFor="featured" className="ml-2 text-sm">
+                    Featured Product
+                  </label>
+                </div>
+                
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="bestSeller"
+                    checked={newProduct.bestSeller || false}
+                    onChange={(e) => setNewProduct({...newProduct, bestSeller: e.target.checked})}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/25"
+                  />
+                  <label htmlFor="bestSeller" className="ml-2 text-sm">
+                    Best Seller
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium flex items-center mb-1.5">
+                  <ImageIcon size={16} className="mr-2 text-gray-500" />
+                  Image URL *
+                </label>
+                <input
+                  type="text"
+                  value={newProduct.image}
+                  onChange={(e) => setNewProduct({...newProduct, image: e.target.value})}
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Enter image URL"
+                />
+                {newProduct.image && (
+                  <div className="mt-2 border rounded p-2">
+                    <p className="text-xs mb-1 text-gray-500">Preview:</p>
+                    <img
+                      src={newProduct.image}
+                      alt="Product preview"
+                      className="w-full h-32 object-cover rounded"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = "https://placehold.co/600x400?text=Image+Error";
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium flex items-center mb-1.5">
+                  Description *
+                </label>
+                <textarea
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Enter product description"
+                  rows={4}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium flex items-center mb-1.5">
+                  Tags
+                </label>
+                <div className="flex items-center mb-2">
+                  <input
+                    type="text"
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    className="flex-grow rounded-l-lg border border-gray-200 border-r-0 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    placeholder="Add a tag"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newTag) {
+                        e.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddTag}
+                    disabled={!newTag}
+                    className="rounded-r-lg bg-primary text-white px-3 py-2 disabled:opacity-50"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  {newProduct.tags?.map((tag) => (
+                    <div key={tag} className="bg-muted px-3 py-1 rounded-full text-sm flex items-center">
+                      <span>#{tag}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        className="ml-2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsProductDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveProduct}>
+              {editingProduct ? "Update Product" : "Add Product"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
 export default Admin;
-

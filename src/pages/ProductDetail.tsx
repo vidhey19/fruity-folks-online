@@ -6,8 +6,10 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ProductCard from "../components/ProductCard";
 import AnimatedPage from "../components/AnimatedPage";
+import CurrencySelector from "../components/CurrencySelector";
 import { products, getRelatedProducts, Product } from "../data/products";
 import { useCart } from "../contexts/CartContext";
+import { useCurrency } from "../contexts/CurrencyContext";
 import { fadeIn, staggerContainer } from "../utils/animations";
 import {
   Minus,
@@ -28,6 +30,7 @@ const ProductDetail = () => {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [selectedImage, setSelectedImage] = useState("");
   const { addToCart } = useCart();
+  const { formatPrice } = useCurrency();
   
   useEffect(() => {
     // Reset scroll position when component mounts
@@ -107,16 +110,6 @@ const ProductDetail = () => {
     }
   };
   
-  const formattedPrice = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(product.salePrice || product.price);
-  
-  const formattedOriginalPrice = product.salePrice ? new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(product.price) : null;
-  
   const discount = product.salePrice
     ? Math.round(((product.price - product.salePrice) / product.price) * 100)
     : null;
@@ -191,19 +184,24 @@ const ProductDetail = () => {
                   {/* Name */}
                   <h1 className="text-3xl font-display font-bold mb-4">{product.name}</h1>
                   
-                  {/* Price */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="text-2xl font-bold text-primary">{formattedPrice}</span>
-                    {formattedOriginalPrice && (
-                      <span className="text-muted-foreground line-through">
-                        {formattedOriginalPrice}
+                  {/* Price and Currency Selector */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-primary">
+                        {formatPrice(product.salePrice || product.price)}
                       </span>
-                    )}
-                    {discount && (
-                      <span className="bg-primary/10 text-primary text-sm font-medium px-2 py-1 rounded-full">
-                        {discount}% Off
-                      </span>
-                    )}
+                      {product.salePrice && (
+                        <span className="text-muted-foreground line-through">
+                          {formatPrice(product.price)}
+                        </span>
+                      )}
+                      {discount && (
+                        <span className="bg-primary/10 text-primary text-sm font-medium px-2 py-1 rounded-full">
+                          {discount}% Off
+                        </span>
+                      )}
+                    </div>
+                    <CurrencySelector />
                   </div>
                   
                   {/* Description */}

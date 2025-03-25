@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -5,21 +6,27 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ProductCard from "../components/ProductCard";
 import AnimatedPage from "../components/AnimatedPage";
+import CurrencySelector from "../components/CurrencySelector";
 import { getProductsByCategory, categories, products, Product, searchProducts } from "../data/products";
 import { staggerContainer, fadeIn } from "../utils/animations";
 import { Filter, Search, X, ChevronDown } from "lucide-react";
+import { useCurrency } from "../contexts/CurrencyContext";
 
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get("category") || "all";
   const searchQuery = searchParams.get("search") || "";
+  const { formatPrice, selectedCurrency } = useCurrency();
   
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
   const [showFilter, setShowFilter] = useState(false);
   const [sortBy, setSortBy] = useState("featured");
-  const [priceRange, setPriceRange] = useState([0, 1000]); // Set a reasonable default max
+  
+  // Set a reasonable default price range
+  const maxDefaultPrice = Math.max(...products.map(p => p.price)) + 5;
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, maxDefaultPrice]);
   
   // Filter products when category or search changes
   useEffect(() => {
@@ -36,11 +43,14 @@ const Shop = () => {
       );
     }
     
-    // Apply price filter
+    // Apply price filter - convert to selected currency for comparison
+    const minPriceInUSD = priceRange[0] / selectedCurrency.rate;
+    const maxPriceInUSD = priceRange[1] / selectedCurrency.rate;
+    
     filtered = filtered.filter(
       product => {
         const price = product.salePrice || product.price;
-        return price >= priceRange[0] && price <= priceRange[1];
+        return price >= minPriceInUSD && price <= maxPriceInUSD;
       }
     );
     
@@ -67,19 +77,19 @@ const Shop = () => {
     if (selectedCategory !== "all") params.category = selectedCategory;
     if (localSearchQuery) params.search = localSearchQuery;
     setSearchParams(params);
-  }, [selectedCategory, localSearchQuery, sortBy, priceRange, setSearchParams]);
+  }, [selectedCategory, localSearchQuery, sortBy, priceRange, setSearchParams, selectedCurrency]);
   
   // Initialize with maximum price range 
   useEffect(() => {
-    // Set initial price range to include all products
-    const maxPrice = Math.max(...products.map(p => p.price)) + 5;
+    // Set initial price range to include all products, converted to current currency
+    const maxPrice = Math.max(...products.map(p => p.price)) * selectedCurrency.rate + 5;
     setPriceRange([0, maxPrice]);
     
     // If there's a search query from URL, update the local state
     if (searchQuery) {
       setLocalSearchQuery(searchQuery);
     }
-  }, [searchQuery]);
+  }, [searchQuery, selectedCurrency]);
   
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId);
@@ -101,8 +111,8 @@ const Shop = () => {
     setShowFilter(!showFilter);
   };
   
-  // Get the highest product price for the range input
-  const maxPrice = Math.max(...products.map(p => p.price)) + 5;
+  // Get the highest product price for the range input, converted to current currency
+  const maxPrice = Math.max(...products.map(p => p.price)) * selectedCurrency.rate + 5;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -152,11 +162,14 @@ const Shop = () => {
                   </div>
                   
                   <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                    <h3 className="font-display font-bold mb-4">Price Range</h3>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-display font-bold">Price Range</h3>
+                      <CurrencySelector />
+                    </div>
                     <div className="space-y-4">
                       <div className="flex justify-between">
-                        <span>${priceRange[0]}</span>
-                        <span>${priceRange[1]}</span>
+                        <span>{formatPrice(priceRange[0])}</span>
+                        <span>{formatPrice(priceRange[1])}</span>
                       </div>
                       <input
                         type="range"
@@ -221,6 +234,8 @@ const Shop = () => {
                       <ChevronDown size={16} className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-muted-foreground" />
                     </div>
                     
+                    <CurrencySelector />
+                    
                     <button
                       onClick={toggleFilter}
                       className="lg:hidden px-4 py-2 rounded-full border border-border bg-white"
@@ -266,11 +281,14 @@ const Shop = () => {
                       </div>
                       
                       <div>
-                        <h4 className="font-medium mb-3">Price Range</h4>
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-medium">Price Range</h4>
+                          <CurrencySelector />
+                        </div>
                         <div className="space-y-4">
                           <div className="flex justify-between">
-                            <span>${priceRange[0]}</span>
-                            <span>${priceRange[1]}</span>
+                            <span>{formatPrice(priceRange[0])}</span>
+                            <span>{formatPrice(priceRange[1])}</span>
                           </div>
                           <input
                             type="range"
