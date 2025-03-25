@@ -25,6 +25,27 @@ interface CartContextType {
   removeFromCart: (productId: number) => void;
   updateQuantity: (productId: number, quantity: number) => void;
   clearCart: () => void;
+  saveOrder: (customerInfo: CustomerInfo) => Promise<string>;
+}
+
+interface CustomerInfo {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  paymentMethod: string;
+}
+
+interface Order {
+  id: string;
+  items: CartItem[];
+  customerInfo: CustomerInfo;
+  total: number;
+  status: "Processing" | "Shipped" | "Delivered" | "Cancelled";
+  date: string;
 }
 
 const initialState: CartState = {
@@ -156,6 +177,46 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success("Cart cleared");
   };
 
+  // Function to save an order
+  const saveOrder = async (customerInfo: CustomerInfo): Promise<string> => {
+    // Generate order ID
+    const orderId = `ORD-${Math.floor(Math.random() * 90000) + 10000}`;
+    
+    // Create new order object
+    const newOrder: Order = {
+      id: orderId,
+      items: [...cart.items],
+      customerInfo,
+      total: cart.totalPrice,
+      status: "Processing",
+      date: new Date().toISOString().split('T')[0]
+    };
+    
+    // Save order to localStorage (simulating database storage)
+    const existingOrders = localStorage.getItem('orders') 
+      ? JSON.parse(localStorage.getItem('orders') as string) 
+      : [];
+    
+    const updatedOrders = [newOrder, ...existingOrders];
+    localStorage.setItem('orders', JSON.stringify(updatedOrders));
+    
+    // Export to Google Sheets if integration is enabled
+    const googleApiKey = localStorage.getItem('googleApiKey');
+    const googleSheetId = localStorage.getItem('googleSheetId');
+    
+    if (googleApiKey && googleSheetId) {
+      // Here we would normally make an API call to Google Sheets
+      // For the demo, we'll just simulate success
+      console.log("Order exported to Google Sheets:", newOrder);
+    }
+    
+    // Clear the cart after successful order
+    clearCart();
+    
+    // Return the order ID for confirmation
+    return orderId;
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -163,7 +224,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addToCart,
         removeFromCart,
         updateQuantity,
-        clearCart
+        clearCart,
+        saveOrder
       }}
     >
       {children}

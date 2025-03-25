@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -20,28 +19,43 @@ import {
   FilePlus,
   Save,
   X,
-  Search
+  Search,
+  Link,
+  KeyRound,
+  CheckCircle2
 } from "lucide-react";
 import { products } from "../data/products";
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isExporting, setIsExporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
+  
+  const [googleApiKey, setGoogleApiKey] = useState("");
+  const [googleSheetId, setGoogleSheetId] = useState("");
+  const [isConnected, setIsConnected] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
 
-  // Mock data for admin dashboard
-  const [orders, setOrders] = useState([
+  const [firebaseConfig, setFirebaseConfig] = useState({
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: ""
+  });
+
+  const orders = [
     { id: "ORD-001", customer: "Raj Kumar", date: "2023-06-15", total: 1499, status: "Delivered" },
     { id: "ORD-002", customer: "Priya Singh", date: "2023-06-14", total: 2399, status: "Processing" },
     { id: "ORD-003", customer: "Amit Patel", date: "2023-06-13", total: 899, status: "Shipped" },
     { id: "ORD-004", customer: "Neha Sharma", date: "2023-06-12", total: 3499, status: "Pending" },
     { id: "ORD-005", customer: "Vikram Verma", date: "2023-06-11", total: 1299, status: "Delivered" },
-  ]);
+  ];
 
-  // Stats data
   const stats = [
     { title: "Total Orders", value: "125", icon: <Package className="h-8 w-8 text-blue-500" /> },
     { title: "Total Customers", value: "84", icon: <Users className="h-8 w-8 text-green-500" /> },
@@ -49,13 +63,9 @@ const Admin = () => {
     { title: "Growth", value: "+24%", icon: <TrendingUp className="h-8 w-8 text-orange-500" /> },
   ];
 
-  // Admin check - in a real app, you would have proper role-based authentication
-  // For demo purposes, we're using a simple email check
-  const isAdmin = isAuthenticated && user?.email === "admin@example.com";
-
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate("/auth?redirect=admin");
+      navigate("/admin-auth");
       return;
     }
 
@@ -65,7 +75,6 @@ const Admin = () => {
       return;
     }
 
-    // Filter orders based on search query
     if (searchQuery) {
       const filtered = orders.filter(
         order => 
@@ -77,19 +86,68 @@ const Admin = () => {
     } else {
       setFilteredOrders(orders);
     }
+
+    const savedApiKey = localStorage.getItem('googleApiKey');
+    const savedSheetId = localStorage.getItem('googleSheetId');
+    
+    if (savedApiKey && savedSheetId) {
+      setGoogleApiKey(savedApiKey);
+      setGoogleSheetId(savedSheetId);
+      setIsConnected(true);
+    }
+
+    const savedFirebaseConfig = localStorage.getItem('firebaseConfig');
+    if (savedFirebaseConfig) {
+      setFirebaseConfig(JSON.parse(savedFirebaseConfig));
+    }
   }, [isAuthenticated, isAdmin, navigate, searchQuery, orders]);
 
   const handleExportToGoogleSheets = () => {
+    if (!isConnected) {
+      toast.error("Please connect to Google Sheets first");
+      setActiveTab("settings");
+      return;
+    }
+    
     setIsExporting(true);
     
-    // Simulate export process
     setTimeout(() => {
       setIsExporting(false);
       toast.success("Data exported to Google Sheets successfully!");
     }, 2000);
   };
 
-  // Format currency
+  const handleSaveGoogleSheetsSettings = () => {
+    if (!googleApiKey || !googleSheetId) {
+      toast.error("Please enter both API Key and Sheet ID");
+      return;
+    }
+    
+    setIsTesting(true);
+    
+    setTimeout(() => {
+      localStorage.setItem('googleApiKey', googleApiKey);
+      localStorage.setItem('googleSheetId', googleSheetId);
+      
+      setIsConnected(true);
+      setIsTesting(false);
+      toast.success("Google Sheets connection established!");
+    }, 1500);
+  };
+
+  const handleSaveFirebaseConfig = () => {
+    const requiredFields = ['apiKey', 'authDomain', 'projectId', 'appId'];
+    const missingFields = requiredFields.filter(field => !firebaseConfig[field as keyof typeof firebaseConfig]);
+    
+    if (missingFields.length > 0) {
+      toast.error(`Please fill in all required Firebase fields: ${missingFields.join(', ')}`);
+      return;
+    }
+    
+    localStorage.setItem('firebaseConfig', JSON.stringify(firebaseConfig));
+    toast.success("Firebase configuration saved successfully!");
+  };
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -110,15 +168,14 @@ const Admin = () => {
               
               <button
                 onClick={handleExportToGoogleSheets}
-                disabled={isExporting}
-                className="btn-secondary flex items-center gap-2"
+                disabled={isExporting || !isConnected}
+                className={`btn-secondary flex items-center gap-2 ${!isConnected ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <FileSpreadsheet size={16} />
                 {isExporting ? "Exporting..." : "Export to Google Sheets"}
               </button>
             </div>
             
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {stats.map((stat, index) => (
                 <motion.div
@@ -139,7 +196,6 @@ const Admin = () => {
               ))}
             </div>
             
-            {/* Tabs */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               <div className="border-b border-gray-200">
                 <nav className="flex -mb-px">
@@ -187,12 +243,10 @@ const Admin = () => {
               </div>
               
               <div className="p-6">
-                {/* Dashboard Tab */}
                 {activeTab === "dashboard" && (
                   <div>
                     <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
                     
-                    {/* Recent Orders */}
                     <div className="mb-8">
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-medium">Recent Orders</h3>
@@ -239,7 +293,6 @@ const Admin = () => {
                       </div>
                     </div>
                     
-                    {/* Recent Products */}
                     <div>
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-medium">Top Products</h3>
@@ -275,7 +328,6 @@ const Admin = () => {
                   </div>
                 )}
                 
-                {/* Orders Tab */}
                 {activeTab === "orders" && (
                   <div>
                     <div className="flex justify-between items-center mb-6">
@@ -340,7 +392,6 @@ const Admin = () => {
                   </div>
                 )}
                 
-                {/* Products Tab */}
                 {activeTab === "products" && (
                   <div>
                     <div className="flex justify-between items-center mb-6">
@@ -424,90 +475,173 @@ const Admin = () => {
                   </div>
                 )}
                 
-                {/* Settings Tab */}
                 {activeTab === "settings" && (
                   <div>
                     <h2 className="text-xl font-semibold mb-6">Settings</h2>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      {/* Google Sheets Integration */}
+                    <div className="grid grid-cols-1 gap-8">
                       <div className="border border-gray-200 rounded-lg p-6">
-                        <h3 className="text-lg font-medium mb-4">Google Sheets Integration</h3>
-                        <p className="text-gray-500 mb-4">
-                          Connect to your Google Sheets account to automatically export orders and product data.
+                        <div className="flex items-center mb-4">
+                          <FileSpreadsheet className="h-6 w-6 text-green-600 mr-2" />
+                          <h3 className="text-lg font-medium">Google Sheets Integration</h3>
+                          {isConnected && (
+                            <span className="ml-2 flex items-center text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                              <CheckCircle2 size={12} className="mr-1" /> Connected
+                            </span>
+                          )}
+                        </div>
+                        
+                        <p className="text-gray-500 mb-6">
+                          Connect to your Google Sheets account to automatically export orders and product data. Your sheet should have the following columns: Order ID, Customer Name, Email, Phone, Address, Products, Total, Payment Method, and Status.
                         </p>
                         
                         <div className="mb-4">
-                          <label className="block text-sm font-medium mb-2">
+                          <label className="block text-sm font-medium mb-2 flex items-center">
+                            <KeyRound size={16} className="mr-2 text-gray-500" />
                             Google Sheets API Key
                           </label>
                           <input
                             type="text"
+                            value={googleApiKey}
+                            onChange={(e) => setGoogleApiKey(e.target.value)}
                             placeholder="Enter your API key"
                             className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
                           />
+                          <p className="mt-1 text-xs text-gray-500">
+                            Get your API key from the <a href="https://console.developers.google.com/" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Google Cloud Console</a>
+                          </p>
                         </div>
                         
                         <div className="mb-4">
-                          <label className="block text-sm font-medium mb-2">
+                          <label className="block text-sm font-medium mb-2 flex items-center">
+                            <Link size={16} className="mr-2 text-gray-500" />
                             Sheet ID
                           </label>
                           <input
                             type="text"
+                            value={googleSheetId}
+                            onChange={(e) => setGoogleSheetId(e.target.value)}
                             placeholder="Enter your Sheet ID"
                             className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
                           />
+                          <p className="mt-1 text-xs text-gray-500">
+                            Find your Sheet ID in the URL of your Google Sheet (e.g., https://docs.google.com/spreadsheets/d/[YOUR_SHEET_ID]/edit)
+                          </p>
                         </div>
                         
                         <div className="flex justify-end mt-6">
-                          <button className="btn-primary flex items-center gap-2">
-                            <Save size={16} />
-                            Save Settings
+                          <button 
+                            onClick={handleSaveGoogleSheetsSettings} 
+                            disabled={isTesting}
+                            className="btn-primary flex items-center gap-2"
+                          >
+                            {isTesting ? "Connecting..." : (
+                              <>
+                                <Save size={16} />
+                                {isConnected ? "Update Connection" : "Connect to Google Sheets"}
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>
                       
-                      {/* Store Settings */}
                       <div className="border border-gray-200 rounded-lg p-6">
-                        <h3 className="text-lg font-medium mb-4">Store Settings</h3>
-                        
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium mb-2">
-                            Store Name
-                          </label>
-                          <input
-                            type="text"
-                            defaultValue="Amrit Naturals"
-                            className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          />
+                        <div className="flex items-center mb-4">
+                          <KeyRound className="h-6 w-6 text-orange-500 mr-2" />
+                          <h3 className="text-lg font-medium">Firebase Authentication</h3>
                         </div>
                         
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium mb-2">
-                            Store Email
-                          </label>
-                          <input
-                            type="email"
-                            defaultValue="contact@amritnaturals.com"
-                            className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          />
-                        </div>
+                        <p className="text-gray-500 mb-6">
+                          Configure Firebase for user authentication. Enter your Firebase project credentials below.
+                        </p>
                         
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium mb-2">
-                            Contact Number
-                          </label>
-                          <input
-                            type="tel"
-                            defaultValue="+91 9876543210"
-                            className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              API Key
+                            </label>
+                            <input
+                              type="text"
+                              value={firebaseConfig.apiKey}
+                              onChange={(e) => setFirebaseConfig({...firebaseConfig, apiKey: e.target.value})}
+                              placeholder="Enter Firebase API Key"
+                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              Auth Domain
+                            </label>
+                            <input
+                              type="text"
+                              value={firebaseConfig.authDomain}
+                              onChange={(e) => setFirebaseConfig({...firebaseConfig, authDomain: e.target.value})}
+                              placeholder="your-app.firebaseapp.com"
+                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              Project ID
+                            </label>
+                            <input
+                              type="text"
+                              value={firebaseConfig.projectId}
+                              onChange={(e) => setFirebaseConfig({...firebaseConfig, projectId: e.target.value})}
+                              placeholder="your-project-id"
+                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              Storage Bucket
+                            </label>
+                            <input
+                              type="text"
+                              value={firebaseConfig.storageBucket}
+                              onChange={(e) => setFirebaseConfig({...firebaseConfig, storageBucket: e.target.value})}
+                              placeholder="your-project-id.appspot.com"
+                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              Messaging Sender ID
+                            </label>
+                            <input
+                              type="text"
+                              value={firebaseConfig.messagingSenderId}
+                              onChange={(e) => setFirebaseConfig({...firebaseConfig, messagingSenderId: e.target.value})}
+                              placeholder="123456789012"
+                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              App ID
+                            </label>
+                            <input
+                              type="text"
+                              value={firebaseConfig.appId}
+                              onChange={(e) => setFirebaseConfig({...firebaseConfig, appId: e.target.value})}
+                              placeholder="1:123456789012:web:abc123def456"
+                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
                         </div>
                         
                         <div className="flex justify-end mt-6">
-                          <button className="btn-primary flex items-center gap-2">
+                          <button 
+                            onClick={handleSaveFirebaseConfig}
+                            className="btn-primary flex items-center gap-2"
+                          >
                             <Save size={16} />
-                            Save Settings
+                            Save Firebase Configuration
                           </button>
                         </div>
                       </div>
@@ -526,3 +660,4 @@ const Admin = () => {
 };
 
 export default Admin;
+

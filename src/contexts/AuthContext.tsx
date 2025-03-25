@@ -7,19 +7,26 @@ interface User {
   email: string;
   name: string;
   provider?: string;
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  adminLogin: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   loginError: string | null;
   clearLoginError: () => void;
 }
+
+// Admin credentials - in a real app, these would be stored securely in a database
+const ADMIN_EMAIL = "admin@example.com";
+const ADMIN_PASSWORD = "admin123";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -88,6 +95,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success("Logged in successfully!");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to login";
+      setLoginError(errorMessage);
+      toast.error(errorMessage);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const adminLogin = async (email: string, password: string) => {
+    setIsLoading(true);
+    clearLoginError();
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (!email || !password) {
+        setLoginError("Email and password are required");
+        throw new Error("Email and password are required");
+      }
+      
+      // Check against predefined admin credentials
+      if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+        setLoginError("Invalid admin credentials");
+        throw new Error("Invalid admin credentials");
+      }
+      
+      // Create admin user
+      const adminUser = {
+        id: `admin-${Date.now()}`,
+        email: ADMIN_EMAIL,
+        name: "Administrator",
+        provider: "email",
+        isAdmin: true
+      };
+      
+      // Store admin user in localStorage
+      localStorage.setItem("user", JSON.stringify(adminUser));
+      setUser(adminUser);
+      toast.success("Admin login successful!");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Admin login failed";
       setLoginError(errorMessage);
       toast.error(errorMessage);
       throw error;
@@ -181,8 +229,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         isAuthenticated: !!user,
+        isAdmin: !!user?.isAdmin,
         isLoading,
         login,
+        adminLogin,
         loginWithGoogle,
         register,
         logout,
