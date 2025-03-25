@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -24,12 +23,16 @@ const Shop = () => {
   
   // Filter products when category or search changes
   useEffect(() => {
-    let filtered = getProductsByCategory(selectedCategory);
+    let filtered: Product[] = getProductsByCategory(selectedCategory);
     
     // Apply search filter if query exists
     if (localSearchQuery) {
-      filtered = searchProducts(localSearchQuery).filter(
-        product => selectedCategory === "all" || product.category === selectedCategory
+      // Get the search results IDs
+      const searchResultIds = searchProducts(localSearchQuery).map(result => result.id);
+      
+      // Filter the products by these IDs and by category if needed
+      filtered = filtered.filter(
+        product => searchResultIds.includes(product.id)
       );
     }
     
