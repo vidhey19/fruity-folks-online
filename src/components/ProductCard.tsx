@@ -3,12 +3,13 @@ import { Link } from "react-router-dom";
 import { Product } from "../data/products";
 import { useCart } from "../contexts/CartContext";
 import { useCurrency } from "../contexts/CurrencyContext";
-import { ShoppingCart, Heart } from "lucide-react";
+import { ShoppingCart, Heart, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "../hooks/use-mobile";
+import { Badge } from "@/components/ui/badge";
 
 const ProductCard = ({ product }: { product: Product }) => {
-  const { addToCart, cart } = useCart();
+  const { addToCart, cart, updateQuantity, removeFromCart } = useCart();
   const { formatPrice } = useCurrency();
   const isMobile = useIsMobile();
   
@@ -21,6 +22,28 @@ const ProductCard = ({ product }: { product: Product }) => {
     e.stopPropagation();
     
     addToCart(product, 1);
+  };
+  
+  const handleIncreaseQuantity = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (quantityInCart > 0) {
+      updateQuantity(product.id, quantityInCart + 1);
+    } else {
+      addToCart(product, 1);
+    }
+  };
+  
+  const handleDecreaseQuantity = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (quantityInCart > 1) {
+      updateQuantity(product.id, quantityInCart - 1);
+    } else if (quantityInCart === 1) {
+      removeFromCart(product.id);
+    }
   };
   
   const handleWishlist = (e: React.MouseEvent) => {
@@ -92,18 +115,35 @@ const ProductCard = ({ product }: { product: Product }) => {
                   <Heart size={16} />
                 </button>
                 
-                <button
-                  onClick={handleAddToCart}
-                  className="p-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary relative"
-                  aria-label="Add to cart"
-                >
-                  <ShoppingCart size={16} />
-                  {quantityInCart > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-primary text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                {quantityInCart > 0 ? (
+                  <div className="flex items-center border border-border rounded-full">
+                    <button 
+                      onClick={handleDecreaseQuantity}
+                      className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded-l-full"
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span className="w-6 text-center text-xs font-medium">
                       {quantityInCart}
                     </span>
-                  )}
-                </button>
+                    <button 
+                      onClick={handleIncreaseQuantity}
+                      className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded-r-full"
+                      aria-label="Increase quantity"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleAddToCart}
+                    className="p-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary"
+                    aria-label="Add to cart"
+                  >
+                    <ShoppingCart size={16} />
+                  </button>
+                )}
               </div>
             </div>
           </div>
