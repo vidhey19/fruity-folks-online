@@ -5,10 +5,12 @@ import { useCart } from "../contexts/CartContext";
 import { useCurrency } from "../contexts/CurrencyContext";
 import { ShoppingCart, Heart } from "lucide-react";
 import { toast } from "sonner";
+import { useIsMobile } from "../hooks/use-mobile";
 
 const ProductCard = ({ product }: { product: Product }) => {
   const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
+  const isMobile = useIsMobile();
   
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -77,7 +79,7 @@ const ProductCard = ({ product }: { product: Product }) => {
                 )}
               </div>
               
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+              <div className={`${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity flex gap-1`}>
                 <button
                   onClick={handleWishlist}
                   className="p-2 rounded-full bg-muted/50 hover:bg-muted"
