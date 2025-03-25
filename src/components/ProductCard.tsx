@@ -8,9 +8,13 @@ import { toast } from "sonner";
 import { useIsMobile } from "../hooks/use-mobile";
 
 const ProductCard = ({ product }: { product: Product }) => {
-  const { addToCart } = useCart();
+  const { addToCart, cart } = useCart();
   const { formatPrice } = useCurrency();
   const isMobile = useIsMobile();
+  
+  // Check if the product is in cart
+  const productInCart = cart.items.find(item => item.id === product.id);
+  const quantityInCart = productInCart ? productInCart.quantity : 0;
   
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -90,10 +94,15 @@ const ProductCard = ({ product }: { product: Product }) => {
                 
                 <button
                   onClick={handleAddToCart}
-                  className="p-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary"
+                  className="p-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary relative"
                   aria-label="Add to cart"
                 >
                   <ShoppingCart size={16} />
+                  {quantityInCart > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-primary text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                      {quantityInCart}
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
