@@ -286,11 +286,11 @@ const ProductDetail = () => {
                     <button
                       onClick={toggleWishlist}
                       className={`btn-secondary flex items-center justify-center gap-2 ${
-                        isWishlisted ? 'bg-red-50 text-red-500 hover:bg-red-100 ring-red-200' : ''
+                        isInWishlist ? 'bg-red-50 text-red-500 hover:bg-red-100 ring-red-200' : ''
                       }`}
                     >
-                      <Heart size={18} fill={isWishlisted ? "currentColor" : "none"} />
-                      {isWishlisted ? 'Wishlisted' : 'Wishlist'}
+                      <Heart size={18} fill={isInWishlist ? "currentColor" : "none"} />
+                      {isInWishlist ? 'Wishlisted' : 'Wishlist'}
                     </button>
                     
                     <button
