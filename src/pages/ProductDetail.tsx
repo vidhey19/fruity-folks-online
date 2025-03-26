@@ -9,6 +9,7 @@ import AnimatedPage from "../components/AnimatedPage";
 import CurrencySelector from "../components/CurrencySelector";
 import { products, getRelatedProducts, Product } from "../data/products";
 import { useCart } from "../contexts/CartContext";
+import { useWishlist } from "../contexts/WishlistContext";
 import { useCurrency } from "../contexts/CurrencyContext";
 import { fadeIn, staggerContainer } from "../utils/animations";
 import {
@@ -26,10 +27,10 @@ const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [selectedImage, setSelectedImage] = useState("");
   const { addToCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { formatPrice } = useCurrency();
   
   useEffect(() => {
@@ -87,12 +88,10 @@ const ProductDetail = () => {
   };
   
   const toggleWishlist = () => {
-    setIsWishlisted(!isWishlisted);
-    
-    if (!isWishlisted) {
-      toast.success("Added to wishlist");
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
     } else {
-      toast.success("Removed from wishlist");
+      addToWishlist(product);
     }
   };
   
@@ -109,6 +108,8 @@ const ProductDetail = () => {
       navigator.clipboard.writeText(window.location.href);
     }
   };
+  
+  const productInWishlist = isInWishlist(product.id);
   
   const discount = product.salePrice
     ? Math.round(((product.price - product.salePrice) / product.price) * 100)

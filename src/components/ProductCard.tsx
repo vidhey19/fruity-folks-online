@@ -2,6 +2,7 @@
 import { Link } from "react-router-dom";
 import { Product } from "../data/products";
 import { useCart } from "../contexts/CartContext";
+import { useWishlist } from "../contexts/WishlistContext";
 import { useCurrency } from "../contexts/CurrencyContext";
 import { ShoppingCart, Heart, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
@@ -10,12 +11,14 @@ import { Badge } from "@/components/ui/badge";
 
 const ProductCard = ({ product }: { product: Product }) => {
   const { addToCart, cart, updateQuantity, removeFromCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { formatPrice } = useCurrency();
   const isMobile = useIsMobile();
   
-  // Check if the product is in cart
+  // Check if the product is in cart and wishlist
   const productInCart = cart.items.find(item => item.id === product.id);
   const quantityInCart = productInCart ? productInCart.quantity : 0;
+  const productInWishlist = isInWishlist(product.id);
   
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -50,7 +53,11 @@ const ProductCard = ({ product }: { product: Product }) => {
     e.preventDefault();
     e.stopPropagation();
     
-    toast.success(`${product.name} added to wishlist`);
+    if (productInWishlist) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist(product);
+    }
   };
   
   const discount = product.salePrice
@@ -109,10 +116,14 @@ const ProductCard = ({ product }: { product: Product }) => {
               <div className={`${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity flex gap-1`}>
                 <button
                   onClick={handleWishlist}
-                  className="p-2 rounded-full bg-muted/50 hover:bg-muted"
-                  aria-label="Add to wishlist"
+                  className={`p-2 rounded-full ${
+                    productInWishlist 
+                      ? "bg-red-50 text-red-500 hover:bg-red-100" 
+                      : "bg-muted/50 hover:bg-muted"
+                  }`}
+                  aria-label={productInWishlist ? "Remove from wishlist" : "Add to wishlist"}
                 >
-                  <Heart size={16} />
+                  <Heart size={16} fill={productInWishlist ? "currentColor" : "none"} />
                 </button>
                 
                 {quantityInCart > 0 ? (

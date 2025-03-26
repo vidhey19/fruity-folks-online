@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../contexts/CartContext";
+import { useWishlist } from "../contexts/WishlistContext";
 import { useAuth } from "../contexts/AuthContext";
 import { navbarVariants } from "../utils/animations";
 import { 
@@ -12,7 +13,8 @@ import {
   X, 
   Search,
   LogOut,
-  LogIn
+  LogIn,
+  Heart
 } from "lucide-react";
 import { Button } from "./ui/button";
 import SearchWithSuggestions from "./SearchWithSuggestions";
@@ -22,6 +24,7 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { cart } = useCart();
+  const { wishlist } = useWishlist();
   const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
 
@@ -96,6 +99,15 @@ const Navbar = () => {
               <Search size={20} />
             </button>
 
+            <Link to="/wishlist" className="p-2 rounded-full hover:bg-muted transition-colors relative">
+              <Heart size={20} />
+              {wishlist.items.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {wishlist.items.length}
+                </span>
+              )}
+            </Link>
+
             <Link to="/cart" className="p-2 rounded-full hover:bg-muted transition-colors relative">
               <ShoppingCart size={20} />
               {cart.totalItems > 0 && (
@@ -121,6 +133,10 @@ const Navbar = () => {
                     </Link>
                     <Link to="/orders" className="flex items-center p-2 hover:bg-muted rounded-md transition-colors text-sm">
                       My Orders
+                    </Link>
+                    <Link to="/wishlist" className="flex items-center p-2 hover:bg-muted rounded-md transition-colors text-sm">
+                      <Heart size={16} className="mr-2" />
+                      My Wishlist
                     </Link>
                     <button 
                       onClick={logout}
@@ -189,6 +205,15 @@ const Navbar = () => {
                 </Link>
                 <Link to="/contact" className="py-2 border-b border-gray-100 hover:text-primary transition-colors">
                   Contact
+                </Link>
+                <Link to="/wishlist" className="py-2 border-b border-gray-100 hover:text-primary transition-colors flex items-center">
+                  <Heart size={18} className="mr-2" />
+                  Wishlist
+                  {wishlist.items.length > 0 && (
+                    <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {wishlist.items.length}
+                    </span>
+                  )}
                 </Link>
               </div>
 
