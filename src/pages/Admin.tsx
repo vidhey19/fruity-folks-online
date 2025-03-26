@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -817,4 +818,308 @@ const Admin = () => {
                           </div>
                           
                           <div>
-                            <label className="block text-
+                            <label className="block text-sm font-medium mb-2">
+                              Project ID
+                            </label>
+                            <input
+                              type="text"
+                              value={firebaseConfig.projectId}
+                              onChange={(e) => setFirebaseConfig({...firebaseConfig, projectId: e.target.value})}
+                              placeholder="your-project-id"
+                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              Storage Bucket
+                            </label>
+                            <input
+                              type="text"
+                              value={firebaseConfig.storageBucket}
+                              onChange={(e) => setFirebaseConfig({...firebaseConfig, storageBucket: e.target.value})}
+                              placeholder="your-project-id.appspot.com"
+                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              Messaging Sender ID
+                            </label>
+                            <input
+                              type="text"
+                              value={firebaseConfig.messagingSenderId}
+                              onChange={(e) => setFirebaseConfig({...firebaseConfig, messagingSenderId: e.target.value})}
+                              placeholder="123456789"
+                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              App ID
+                            </label>
+                            <input
+                              type="text"
+                              value={firebaseConfig.appId}
+                              onChange={(e) => setFirebaseConfig({...firebaseConfig, appId: e.target.value})}
+                              placeholder="1:123456789:web:abcdef"
+                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-end mt-6">
+                          <button 
+                            onClick={handleSaveFirebaseConfig}
+                            className="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-md flex items-center gap-2"
+                          >
+                            <Save size={16} />
+                            Save Firebase Configuration
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </main>
+      </AnimatedPage>
+      
+      <Footer />
+      
+      {/* Product Add/Edit Dialog */}
+      <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="col-span-1 md:col-span-2">
+                <label htmlFor="product-name" className="text-sm font-medium">Product Name*</label>
+                <input
+                  id="product-name"
+                  value={newProduct.name}
+                  onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                  placeholder="Enter product name"
+                  className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="product-category" className="text-sm font-medium">Category</label>
+                <select
+                  id="product-category"
+                  value={newProduct.category}
+                  onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                  className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="fruits">Fruits</option>
+                  <option value="vegetables">Vegetables</option>
+                  <option value="dairy">Dairy</option>
+                  <option value="bakery">Bakery</option>
+                  <option value="meat">Meat</option>
+                  <option value="snacks">Snacks</option>
+                  <option value="beverages">Beverages</option>
+                </select>
+              </div>
+              
+              <div>
+                <label htmlFor="product-image" className="text-sm font-medium">Image URL*</label>
+                <input
+                  id="product-image"
+                  value={newProduct.image}
+                  onChange={(e) => setNewProduct({...newProduct, image: e.target.value})}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="product-price" className="text-sm font-medium">Price</label>
+                <div className="flex mt-1">
+                  <span className="flex items-center bg-gray-100 px-3 border border-r-0 border-gray-200 rounded-l-md">
+                    <DollarSign size={16} className="text-gray-500" />
+                  </span>
+                  <input
+                    id="product-price"
+                    type="number"
+                    value={newProduct.price}
+                    onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value)})}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-r-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label htmlFor="product-sale-price" className="text-sm font-medium">Sale Price (optional)</label>
+                <div className="flex mt-1">
+                  <span className="flex items-center bg-gray-100 px-3 border border-r-0 border-gray-200 rounded-l-md">
+                    <DollarSign size={16} className="text-gray-500" />
+                  </span>
+                  <input
+                    id="product-sale-price"
+                    type="number"
+                    value={newProduct.salePrice || ''}
+                    onChange={(e) => setNewProduct({...newProduct, salePrice: e.target.value ? parseFloat(e.target.value) : undefined})}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-r-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label htmlFor="product-stock" className="text-sm font-medium">Stock Quantity</label>
+                <input
+                  id="product-stock"
+                  type="number"
+                  value={newProduct.stock}
+                  onChange={(e) => setNewProduct({...newProduct, stock: parseInt(e.target.value)})}
+                  placeholder="0"
+                  className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="product-weight" className="text-sm font-medium">Weight/Unit (e.g. 500g, 1kg)</label>
+                <input
+                  id="product-weight"
+                  value={newProduct.weight}
+                  onChange={(e) => setNewProduct({...newProduct, weight: e.target.value})}
+                  placeholder="e.g. 500g, 1kg, 1 dozen"
+                  className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="product-origin" className="text-sm font-medium">Origin</label>
+                <input
+                  id="product-origin"
+                  value={newProduct.origin}
+                  onChange={(e) => setNewProduct({...newProduct, origin: e.target.value})}
+                  placeholder="Country or region of origin"
+                  className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              
+              <div className="col-span-1 md:col-span-2">
+                <label htmlFor="product-description" className="text-sm font-medium">Description*</label>
+                <textarea
+                  id="product-description"
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                  placeholder="Enter product description"
+                  rows={4}
+                  className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              
+              <div className="col-span-1 md:col-span-2">
+                <label className="text-sm font-medium">Tags</label>
+                <div className="flex mt-1">
+                  <input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    placeholder="Add a tag"
+                    className="flex-grow px-3 py-2 border border-r-0 border-gray-200 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddTag}
+                    className="flex items-center justify-center px-3 bg-gray-100 border border-gray-200 rounded-r-md hover:bg-gray-200"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+                
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {newProduct.tags?.map((tag, index) => (
+                    <span key={index} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-xs">
+                      {tag}
+                      <button type="button" onClick={() => handleRemoveTag(tag)}>
+                        <X size={14} className="text-gray-500 hover:text-gray-700" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    id="featured"
+                    type="checkbox"
+                    checked={newProduct.featured}
+                    onChange={(e) => setNewProduct({...newProduct, featured: e.target.checked})}
+                    className="rounded border-gray-300 text-primary focus:ring-primary/20"
+                  />
+                  <label htmlFor="featured" className="text-sm">Featured Product</label>
+                </div>
+              </div>
+              
+              <div>
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    id="bestSeller"
+                    type="checkbox"
+                    checked={newProduct.bestSeller}
+                    onChange={(e) => setNewProduct({...newProduct, bestSeller: e.target.checked})}
+                    className="rounded border-gray-300 text-primary focus:ring-primary/20"
+                  />
+                  <label htmlFor="bestSeller" className="text-sm">Best Seller</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setIsProductDialogOpen(false)}
+              className="px-4 py-2 border border-gray-200 rounded-md text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveProduct}
+              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 ml-2"
+            >
+              {editingProduct ? 'Update Product' : 'Add Product'}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the product from your store.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteProduct} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
+
+export default Admin;
