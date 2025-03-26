@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -819,4 +820,310 @@ const Admin = () => {
                               type="text"
                               value={firebaseConfig.authDomain}
                               onChange={(e) => setFirebaseConfig({...firebaseConfig, authDomain: e.target.value})}
-                              placeholder="your-app.
+                              placeholder="your-app.firebaseapp.com"
+                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              Project ID
+                            </label>
+                            <input
+                              type="text"
+                              value={firebaseConfig.projectId}
+                              onChange={(e) => setFirebaseConfig({...firebaseConfig, projectId: e.target.value})}
+                              placeholder="your-app-id"
+                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              Storage Bucket
+                            </label>
+                            <input
+                              type="text"
+                              value={firebaseConfig.storageBucket}
+                              onChange={(e) => setFirebaseConfig({...firebaseConfig, storageBucket: e.target.value})}
+                              placeholder="your-app.appspot.com"
+                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              Messaging Sender ID
+                            </label>
+                            <input
+                              type="text"
+                              value={firebaseConfig.messagingSenderId}
+                              onChange={(e) => setFirebaseConfig({...firebaseConfig, messagingSenderId: e.target.value})}
+                              placeholder="123456789012"
+                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">
+                              App ID
+                            </label>
+                            <input
+                              type="text"
+                              value={firebaseConfig.appId}
+                              onChange={(e) => setFirebaseConfig({...firebaseConfig, appId: e.target.value})}
+                              placeholder="1:123456789012:web:abc123def456"
+                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-end mt-6">
+                          <button 
+                            onClick={handleSaveFirebaseConfig}
+                            className="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-md flex items-center gap-2"
+                          >
+                            <Save size={16} />
+                            Save Firebase Configuration
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </main>
+      </AnimatedPage>
+      
+      {/* Product Dialog */}
+      <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Product Name *</label>
+                <input
+                  type="text"
+                  value={newProduct.name}
+                  onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                  placeholder="Enter product name"
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Category *</label>
+                <select
+                  value={newProduct.category}
+                  onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="fruits">Fruits</option>
+                  <option value="vegetables">Vegetables</option>
+                  <option value="dairy">Dairy</option>
+                  <option value="meat">Meat</option>
+                  <option value="bakery">Bakery</option>
+                  <option value="snacks">Snacks</option>
+                  <option value="beverages">Beverages</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Price *</label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    min="0"
+                    value={newProduct.price}
+                    onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value) || 0})}
+                    placeholder="Regular price"
+                    className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Sale Price (optional)</label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    min="0"
+                    value={newProduct.salePrice || ''}
+                    onChange={(e) => setNewProduct({
+                      ...newProduct, 
+                      salePrice: e.target.value ? parseFloat(e.target.value) : undefined
+                    })}
+                    placeholder="Sale price"
+                    className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Stock *</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newProduct.stock}
+                  onChange={(e) => setNewProduct({...newProduct, stock: parseInt(e.target.value) || 0})}
+                  placeholder="Stock quantity"
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Image URL *</label>
+                <input
+                  type="text"
+                  value={newProduct.image}
+                  onChange={(e) => setNewProduct({...newProduct, image: e.target.value})}
+                  placeholder="Enter image URL"
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Weight</label>
+                <input
+                  type="text"
+                  value={newProduct.weight}
+                  onChange={(e) => setNewProduct({...newProduct, weight: e.target.value})}
+                  placeholder="e.g., 500g, 1kg"
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Origin</label>
+                <input
+                  type="text"
+                  value={newProduct.origin}
+                  onChange={(e) => setNewProduct({...newProduct, origin: e.target.value})}
+                  placeholder="e.g., Himachal, Kerala"
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Description *</label>
+                <textarea
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                  placeholder="Product description"
+                  rows={3}
+                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              
+              <div className="flex space-x-4">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="featured"
+                    checked={newProduct.featured}
+                    onChange={(e) => setNewProduct({...newProduct, featured: e.target.checked})}
+                    className="rounded border-gray-300 text-primary focus:ring-primary/20"
+                  />
+                  <label htmlFor="featured" className="ml-2 text-sm">Featured</label>
+                </div>
+                
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="bestSeller"
+                    checked={newProduct.bestSeller}
+                    onChange={(e) => setNewProduct({...newProduct, bestSeller: e.target.checked})}
+                    className="rounded border-gray-300 text-primary focus:ring-primary/20"
+                  />
+                  <label htmlFor="bestSeller" className="ml-2 text-sm">Best Seller</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <label className="text-sm font-medium mb-1 block">Tags</label>
+            <div className="flex items-center">
+              <input
+                type="text"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                placeholder="Add tag"
+                className="flex-grow rounded-l-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddTag();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleAddTag}
+                className="bg-primary text-white px-4 py-2 rounded-r-lg"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+            
+            <div className="flex flex-wrap gap-2 mt-2">
+              {newProduct.tags?.map((tag, index) => (
+                <span 
+                  key={index} 
+                  className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full flex items-center"
+                >
+                  {tag}
+                  <button 
+                    onClick={() => handleRemoveTag(tag)} 
+                    className="ml-1 text-gray-500 hover:text-gray-700"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+                    
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsProductDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveProduct}>
+              {editingProduct ? 'Update Product' : 'Add Product'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the product from the store.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteProduct} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      <Footer />
+    </div>
+  );
+};
+
+export default Admin;
