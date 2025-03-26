@@ -7,7 +7,7 @@ import Footer from "../components/Footer";
 
 const NotFound = () => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
       <Navbar />
       
       <main className="flex-grow flex items-center justify-center py-16">
@@ -23,7 +23,7 @@ const NotFound = () => {
               The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
             </p>
             
-            <Link to="/" className="btn-primary inline-flex items-center">
+            <Link to="/" className="inline-flex items-center px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90 transition-colors">
               <ArrowLeft size={18} className="mr-2" />
               Back to Home
             </Link>
