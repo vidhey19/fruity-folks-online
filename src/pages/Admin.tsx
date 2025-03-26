@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -31,9 +30,20 @@ import {
   Tag,
   DollarSign,
   BarChart,
-  Plus
+  Plus,
+  AlertCircle
 } from "lucide-react";
-import { products as productsData, Product } from "../data/products";
+import { products as initialProductsData, Product } from "../data/products";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -79,6 +89,10 @@ const Admin = () => {
   });
   const [newTag, setNewTag] = useState("");
   
+  // Delete confirmation
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<number | null>(null);
+  
   const { formatPrice } = useCurrency();
 
   const orders = [
@@ -108,8 +122,15 @@ const Admin = () => {
       return;
     }
 
-    // Initialize products from the data file
-    setProducts(productsData);
+    // Initialize products from localStorage if available, otherwise from data file
+    const savedProducts = localStorage.getItem('adminProducts');
+    if (savedProducts) {
+      setProducts(JSON.parse(savedProducts));
+    } else {
+      setProducts(initialProductsData);
+      // Save to localStorage for persistence
+      localStorage.setItem('adminProducts', JSON.stringify(initialProductsData));
+    }
 
     if (searchQuery) {
       const filtered = orders.filter(
@@ -240,16 +261,17 @@ const Admin = () => {
       return;
     }
 
+    let updatedProducts;
+    
     if (editingProduct) {
       // Update existing product
-      const updatedProducts = products.map(p => 
+      updatedProducts = products.map(p => 
         p.id === editingProduct.id ? {...newProduct, id: editingProduct.id} as Product : p
       );
-      setProducts(updatedProducts);
       toast.success("Product updated successfully!");
     } else {
       // Add new product
-      const newId = Math.max(...products.map(p => p.id)) + 1;
+      const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
       const fullProduct = {
         ...newProduct,
         id: newId,
@@ -258,18 +280,41 @@ const Admin = () => {
         bestSeller: newProduct.bestSeller || false
       } as Product;
       
-      setProducts([...products, fullProduct]);
+      updatedProducts = [...products, fullProduct];
       toast.success("Product added successfully!");
     }
     
+    // Update state and save to localStorage
+    setProducts(updatedProducts);
+    localStorage.setItem('adminProducts', JSON.stringify(updatedProducts));
     setIsProductDialogOpen(false);
   };
 
-  const handleDeleteProduct = (productId: number) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      setProducts(products.filter(p => p.id !== productId));
-      toast.success("Product deleted successfully!");
-    }
+  const confirmDeleteProduct = (productId: number) => {
+    setProductToDelete(productId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteProduct = () => {
+    if (productToDelete === null) return;
+    
+    const updatedProducts = products.filter(p => p.id !== productToDelete);
+    setProducts(updatedProducts);
+    
+    // Save to localStorage
+    localStorage.setItem('adminProducts', JSON.stringify(updatedProducts));
+    
+    toast.success("Product deleted successfully!");
+    setIsDeleteDialogOpen(false);
+    setProductToDelete(null);
+  };
+
+  const handleOrderStatusChange = (orderId: string, newStatus: string) => {
+    const updatedOrders = filteredOrders.map(order => 
+      order.id === orderId ? {...order, status: newStatus} : order
+    );
+    setFilteredOrders(updatedOrders);
+    toast.success(`Order ${orderId} status updated to ${newStatus}`);
   };
 
   return (
@@ -285,7 +330,7 @@ const Admin = () => {
               <button
                 onClick={handleExportToGoogleSheets}
                 disabled={isExporting || !isConnected}
-                className={`btn-secondary flex items-center gap-2 ${!isConnected ? 'opacity-60 cursor-not-allowed' : ''}`}
+                className={`bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-md flex items-center gap-2 ${!isConnected ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <FileSpreadsheet size={16} />
                 {isExporting ? "Exporting..." : "Export to Google Sheets"}
@@ -383,6 +428,7 @@ const Admin = () => {
                               <th className="px-4 py-3 text-left">Date</th>
                               <th className="px-4 py-3 text-left">Total</th>
                               <th className="px-4 py-3 text-left">Status</th>
+                              <th className="px-4 py-3 text-left">Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -401,6 +447,13 @@ const Admin = () => {
                                   }`}>
                                     {order.status}
                                   </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex gap-2">
+                                    <button className="text-gray-500 hover:text-primary">
+                                      <Edit size={16} />
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}
@@ -436,6 +489,12 @@ const Admin = () => {
                               <p className="text-primary font-semibold mt-1">
                                 {formatPrice(product.salePrice || product.price)}
                               </p>
+                              <button 
+                                onClick={() => openProductDialog(product)}
+                                className="mt-2 text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-700"
+                              >
+                                Edit
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -481,22 +540,25 @@ const Admin = () => {
                               <td className="px-4 py-3">{order.date}</td>
                               <td className="px-4 py-3">{formatPrice(order.total)}</td>
                               <td className="px-4 py-3">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  order.status === "Delivered" ? "bg-green-100 text-green-800" :
-                                  order.status === "Processing" ? "bg-blue-100 text-blue-800" :
-                                  order.status === "Shipped" ? "bg-purple-100 text-purple-800" :
-                                  "bg-yellow-100 text-yellow-800"
-                                }`}>
-                                  {order.status}
-                                </span>
+                                <select 
+                                  className="bg-transparent border border-gray-200 rounded px-2 py-1 text-xs"
+                                  value={order.status}
+                                  onChange={(e) => handleOrderStatusChange(order.id, e.target.value)}
+                                >
+                                  <option value="Pending">Pending</option>
+                                  <option value="Processing">Processing</option>
+                                  <option value="Shipped">Shipped</option>
+                                  <option value="Delivered">Delivered</option>
+                                  <option value="Cancelled">Cancelled</option>
+                                </select>
                               </td>
                               <td className="px-4 py-3">
                                 <div className="flex gap-2">
-                                  <button className="text-gray-500 hover:text-primary">
+                                  <button 
+                                    className="text-gray-500 hover:text-primary"
+                                    title="View Order Details"
+                                  >
                                     <ExternalLink size={16} />
-                                  </button>
-                                  <button className="text-gray-500 hover:text-primary">
-                                    <Edit size={16} />
                                   </button>
                                 </div>
                               </td>
@@ -513,7 +575,7 @@ const Admin = () => {
                     <div className="flex justify-between items-center mb-6">
                       <h2 className="text-xl font-semibold">All Products</h2>
                       <button 
-                        className="btn-primary flex items-center gap-2"
+                        className="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-md flex items-center gap-2"
                         onClick={() => openProductDialog()}
                       >
                         <FilePlus size={16} />
@@ -581,12 +643,14 @@ const Admin = () => {
                                   <button 
                                     className="text-gray-500 hover:text-primary"
                                     onClick={() => openProductDialog(product)}
+                                    title="Edit Product"
                                   >
                                     <Edit size={16} />
                                   </button>
                                   <button 
                                     className="text-gray-500 hover:text-red-500"
-                                    onClick={() => handleDeleteProduct(product.id)}
+                                    onClick={() => confirmDeleteProduct(product.id)}
+                                    title="Delete Product"
                                   >
                                     <Trash2 size={16} />
                                   </button>
@@ -703,7 +767,7 @@ const Admin = () => {
                           <button 
                             onClick={handleSaveGoogleSheetsSettings} 
                             disabled={isTesting}
-                            className="btn-primary flex items-center gap-2"
+                            className="bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-md flex items-center gap-2"
                           >
                             {isTesting ? "Connecting..." : (
                               <>
@@ -753,321 +817,4 @@ const Admin = () => {
                           </div>
                           
                           <div>
-                            <label className="block text-sm font-medium mb-2">
-                              Project ID
-                            </label>
-                            <input
-                              type="text"
-                              value={firebaseConfig.projectId}
-                              onChange={(e) => setFirebaseConfig({...firebaseConfig, projectId: e.target.value})}
-                              placeholder="your-project-id"
-                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium mb-2">
-                              Storage Bucket
-                            </label>
-                            <input
-                              type="text"
-                              value={firebaseConfig.storageBucket}
-                              onChange={(e) => setFirebaseConfig({...firebaseConfig, storageBucket: e.target.value})}
-                              placeholder="your-project-id.appspot.com"
-                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium mb-2">
-                              Messaging Sender ID
-                            </label>
-                            <input
-                              type="text"
-                              value={firebaseConfig.messagingSenderId}
-                              onChange={(e) => setFirebaseConfig({...firebaseConfig, messagingSenderId: e.target.value})}
-                              placeholder="123456789012"
-                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium mb-2">
-                              App ID
-                            </label>
-                            <input
-                              type="text"
-                              value={firebaseConfig.appId}
-                              onChange={(e) => setFirebaseConfig({...firebaseConfig, appId: e.target.value})}
-                              placeholder="1:123456789012:web:abc123def456"
-                              className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="flex justify-end mt-6">
-                          <button 
-                            onClick={handleSaveFirebaseConfig}
-                            className="btn-primary flex items-center gap-2"
-                          >
-                            <Save size={16} />
-                            Save Firebase Configuration
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </main>
-      </AnimatedPage>
-      
-      <Footer />
-
-      {/* Product Form Dialog */}
-      <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
-          </DialogHeader>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium flex items-center mb-1.5">
-                  <Tag size={16} className="mr-2 text-gray-500" />
-                  Product Name *
-                </label>
-                <input
-                  type="text"
-                  value={newProduct.name}
-                  onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
-                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="Enter product name"
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium flex items-center mb-1.5">
-                  <BarChart size={16} className="mr-2 text-gray-500" />
-                  Category *
-                </label>
-                <select
-                  value={newProduct.category}
-                  onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
-                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="mangoes">Mangoes</option>
-                  <option value="fruits">Other Fruits</option>
-                  <option value="vegetables">Vegetables</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium flex items-center mb-1.5">
-                  <DollarSign size={16} className="mr-2 text-gray-500" />
-                  Price *
-                </label>
-                <input
-                  type="number"
-                  value={newProduct.price}
-                  onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value) || 0})}
-                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="Regular price"
-                  min="0"
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium flex items-center mb-1.5">
-                  <DollarSign size={16} className="mr-2 text-gray-500" />
-                  Sale Price (optional)
-                </label>
-                <input
-                  type="number"
-                  value={newProduct.salePrice || ""}
-                  onChange={(e) => {
-                    const value = e.target.value ? parseFloat(e.target.value) : undefined;
-                    setNewProduct({...newProduct, salePrice: value});
-                  }}
-                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="Sale price (if any)"
-                  min="0"
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium flex items-center mb-1.5">
-                  <Package size={16} className="mr-2 text-gray-500" />
-                  Stock *
-                </label>
-                <input
-                  type="number"
-                  value={newProduct.stock}
-                  onChange={(e) => setNewProduct({...newProduct, stock: parseInt(e.target.value) || 0})}
-                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="Available stock"
-                  min="0"
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium flex items-center mb-1.5">
-                  Weight
-                </label>
-                <input
-                  type="text"
-                  value={newProduct.weight}
-                  onChange={(e) => setNewProduct({...newProduct, weight: e.target.value})}
-                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="e.g. 500g, 1kg"
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium flex items-center mb-1.5">
-                  Origin
-                </label>
-                <input
-                  type="text"
-                  value={newProduct.origin}
-                  onChange={(e) => setNewProduct({...newProduct, origin: e.target.value})}
-                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="Country/Region of origin"
-                />
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="featured"
-                    checked={newProduct.featured || false}
-                    onChange={(e) => setNewProduct({...newProduct, featured: e.target.checked})}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/25"
-                  />
-                  <label htmlFor="featured" className="ml-2 text-sm">
-                    Featured Product
-                  </label>
-                </div>
-                
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="bestSeller"
-                    checked={newProduct.bestSeller || false}
-                    onChange={(e) => setNewProduct({...newProduct, bestSeller: e.target.checked})}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/25"
-                  />
-                  <label htmlFor="bestSeller" className="ml-2 text-sm">
-                    Best Seller
-                  </label>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium flex items-center mb-1.5">
-                  <ImageIcon size={16} className="mr-2 text-gray-500" />
-                  Image URL *
-                </label>
-                <input
-                  type="text"
-                  value={newProduct.image}
-                  onChange={(e) => setNewProduct({...newProduct, image: e.target.value})}
-                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="Enter image URL"
-                />
-                {newProduct.image && (
-                  <div className="mt-2 border rounded p-2">
-                    <p className="text-xs mb-1 text-gray-500">Preview:</p>
-                    <img
-                      src={newProduct.image}
-                      alt="Product preview"
-                      className="w-full h-32 object-cover rounded"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = "https://placehold.co/600x400?text=Image+Error";
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium flex items-center mb-1.5">
-                  Description *
-                </label>
-                <textarea
-                  value={newProduct.description}
-                  onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
-                  className="w-full rounded-lg border border-gray-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="Enter product description"
-                  rows={4}
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium flex items-center mb-1.5">
-                  Tags
-                </label>
-                <div className="flex items-center mb-2">
-                  <input
-                    type="text"
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    className="flex-grow rounded-l-lg border border-gray-200 border-r-0 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    placeholder="Add a tag"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && newTag) {
-                        e.preventDefault();
-                        handleAddTag();
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddTag}
-                    disabled={!newTag}
-                    className="rounded-r-lg bg-primary text-white px-3 py-2 disabled:opacity-50"
-                  >
-                    <Plus size={16} />
-                  </button>
-                </div>
-                
-                <div className="flex flex-wrap gap-2">
-                  {newProduct.tags?.map((tag) => (
-                    <div key={tag} className="bg-muted px-3 py-1 rounded-full text-sm flex items-center">
-                      <span>#{tag}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-2 text-gray-400 hover:text-gray-600"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsProductDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveProduct}>
-              {editingProduct ? "Update Product" : "Add Product"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-export default Admin;
+                            <label className="block text-
