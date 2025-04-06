@@ -9,6 +9,7 @@ import Footer from "../components/Footer";
 import AnimatedPage from "../components/AnimatedPage";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const AdminAuth = () => {
   const [email, setEmail] = useState("admin@example.com");
