@@ -8,6 +8,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import AnimatedPage from "../components/AnimatedPage";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const AdminAuth = () => {
   const [email, setEmail] = useState("admin@example.com");
@@ -22,9 +23,11 @@ const AdminAuth = () => {
     
     try {
       await adminLogin(email, password);
+      toast.success("Successfully logged in as administrator!");
       navigate("/admin");
     } catch (error) {
       console.error("Admin login failed:", error);
+      // Error is already shown by the AuthContext
     } finally {
       setIsSubmitting(false);
     }
@@ -105,6 +108,7 @@ const AdminAuth = () => {
                       placeholder="Use: admin123"
                     />
                   </div>
+                  <p className="mt-2 text-xs text-gray-500">For demo purposes, use admin@example.com / admin123</p>
                 </div>
                 
                 <div>

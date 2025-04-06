@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -71,7 +70,6 @@ const Admin = () => {
     appId: ""
   });
 
-  // Product Management States
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
@@ -90,7 +88,6 @@ const Admin = () => {
   });
   const [newTag, setNewTag] = useState("");
   
-  // Delete confirmation
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<number | null>(null);
   
@@ -112,10 +109,8 @@ const Admin = () => {
   ];
 
   useEffect(() => {
-    // Skip the authorization check for now to make sure the page is accessible
-    // This is temporary to help with debugging - we'll restore proper authentication later
-    /*
     if (!isAuthenticated) {
+      toast.error("You must be logged in to access the admin panel");
       navigate("/admin-auth");
       return;
     }
@@ -125,15 +120,12 @@ const Admin = () => {
       navigate("/");
       return;
     }
-    */
 
-    // Initialize products from localStorage if available, otherwise from data file
     const savedProducts = localStorage.getItem('adminProducts');
     if (savedProducts) {
       setProducts(JSON.parse(savedProducts));
     } else {
       setProducts(initialProductsData);
-      // Save to localStorage for persistence
       localStorage.setItem('adminProducts', JSON.stringify(initialProductsData));
     }
 
@@ -164,7 +156,6 @@ const Admin = () => {
     }
   }, [isAuthenticated, isAdmin, navigate, searchQuery, orders]);
 
-  // Handle pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentProducts = products.slice(indexOfFirstItem, indexOfLastItem);
@@ -218,7 +209,6 @@ const Admin = () => {
     toast.success("Firebase configuration saved successfully!");
   };
 
-  // Product management functions
   const openProductDialog = (product?: Product) => {
     if (product) {
       setEditingProduct(product);
@@ -269,13 +259,11 @@ const Admin = () => {
     let updatedProducts;
     
     if (editingProduct) {
-      // Update existing product
       updatedProducts = products.map(p => 
         p.id === editingProduct.id ? {...newProduct, id: editingProduct.id} as Product : p
       );
       toast.success("Product updated successfully!");
     } else {
-      // Add new product
       const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
       const fullProduct = {
         ...newProduct,
@@ -289,7 +277,6 @@ const Admin = () => {
       toast.success("Product added successfully!");
     }
     
-    // Update state and save to localStorage
     setProducts(updatedProducts);
     localStorage.setItem('adminProducts', JSON.stringify(updatedProducts));
     setIsProductDialogOpen(false);
@@ -306,7 +293,6 @@ const Admin = () => {
     const updatedProducts = products.filter(p => p.id !== productToDelete);
     setProducts(updatedProducts);
     
-    // Save to localStorage
     localStorage.setItem('adminProducts', JSON.stringify(updatedProducts));
     
     toast.success("Product deleted successfully!");
@@ -330,16 +316,25 @@ const Admin = () => {
         <main className="py-8">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-8">
-              <h1 className="text-3xl font-display font-bold">Admin Dashboard</h1>
+              <div>
+                <h1 className="text-3xl font-display font-bold">Admin Dashboard</h1>
+                {user && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Welcome, {user.name} | <span className="text-primary font-medium">Administrator</span>
+                  </p>
+                )}
+              </div>
               
-              <button
-                onClick={handleExportToGoogleSheets}
-                disabled={isExporting || !isConnected}
-                className={`bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-md flex items-center gap-2 ${!isConnected ? 'opacity-60 cursor-not-allowed' : ''}`}
-              >
-                <FileSpreadsheet size={16} />
-                {isExporting ? "Exporting..." : "Export to Google Sheets"}
-              </button>
+              <div className="flex gap-4">
+                <button
+                  onClick={handleExportToGoogleSheets}
+                  disabled={isExporting || !isConnected}
+                  className={`bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-md flex items-center gap-2 ${!isConnected ? 'opacity-60 cursor-not-allowed' : ''}`}
+                >
+                  <FileSpreadsheet size={16} />
+                  {isExporting ? "Exporting..." : "Export to Google Sheets"}
+                </button>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -409,7 +404,6 @@ const Admin = () => {
               </div>
               
               <div className="p-6">
-                {/* Dashboard Tab */}
                 {activeTab === "dashboard" && (
                   <div>
                     <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
@@ -509,7 +503,6 @@ const Admin = () => {
                   </div>
                 )}
                 
-                {/* Orders Tab */}
                 {activeTab === "orders" && (
                   <div>
                     <div className="flex justify-between items-center mb-6">
@@ -577,7 +570,6 @@ const Admin = () => {
                   </div>
                 )}
                 
-                {/* Products Tab */}
                 {activeTab === "products" && (
                   <div>
                     <div className="flex justify-between items-center mb-6">
@@ -670,7 +662,6 @@ const Admin = () => {
                       </table>
                     </div>
 
-                    {/* Pagination */}
                     {totalPages > 1 && (
                       <div className="flex justify-center mt-6">
                         <nav className="flex items-center gap-1">
@@ -717,7 +708,6 @@ const Admin = () => {
                   </div>
                 )}
                 
-                {/* Settings Tab */}
                 {activeTab === "settings" && (
                   <div>
                     <h2 className="text-xl font-semibold mb-6">Settings</h2>
@@ -897,7 +887,6 @@ const Admin = () => {
         </main>
       </AnimatedPage>
       
-      {/* Product Dialog */}
       <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -1103,7 +1092,6 @@ const Admin = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

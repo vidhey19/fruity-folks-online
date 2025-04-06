@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,7 +13,8 @@ import {
   Search,
   LogOut,
   LogIn,
-  Heart
+  Heart,
+  LockIcon
 } from "lucide-react";
 import { Button } from "./ui/button";
 import SearchWithSuggestions from "./SearchWithSuggestions";
@@ -87,6 +87,11 @@ const Navbar = () => {
             <Link to="/contact" className="font-medium hover:text-primary transition-colors">
               Contact
             </Link>
+            {isAuthenticated && user?.isAdmin && (
+              <Link to="/admin" className="font-medium text-primary hover:text-primary/80 transition-colors">
+                Admin Panel
+              </Link>
+            )}
           </div>
 
           {/* Actions (Cart, User, Search) */}
@@ -126,6 +131,11 @@ const Navbar = () => {
                   <div className="p-3 border-b border-gray-100">
                     <p className="text-sm font-medium">{user?.name}</p>
                     <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    {user?.isAdmin && (
+                      <span className="inline-block mt-1 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                        Administrator
+                      </span>
+                    )}
                   </div>
                   <div className="p-2">
                     <Link to="/account" className="flex items-center p-2 hover:bg-muted rounded-md transition-colors text-sm">
@@ -138,6 +148,12 @@ const Navbar = () => {
                       <Heart size={16} className="mr-2" />
                       My Wishlist
                     </Link>
+                    {user?.isAdmin && (
+                      <Link to="/admin" className="flex items-center p-2 hover:bg-muted rounded-md transition-colors text-sm text-primary">
+                        <LockIcon size={16} className="mr-2" />
+                        Admin Dashboard
+                      </Link>
+                    )}
                     <button 
                       onClick={logout}
                       className="flex items-center p-2 hover:bg-muted rounded-md transition-colors text-sm w-full text-left text-destructive"
@@ -206,6 +222,11 @@ const Navbar = () => {
                 <Link to="/contact" className="py-2 border-b border-gray-100 hover:text-primary transition-colors">
                   Contact
                 </Link>
+                {isAuthenticated && user?.isAdmin && (
+                  <Link to="/admin" className="py-2 border-b border-gray-100 text-primary hover:text-primary/80 transition-colors">
+                    Admin Panel
+                  </Link>
+                )}
                 <Link to="/wishlist" className="py-2 border-b border-gray-100 hover:text-primary transition-colors flex items-center">
                   <Heart size={18} className="mr-2" />
                   Wishlist
