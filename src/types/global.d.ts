@@ -13,5 +13,8 @@ declare module 'firebase/auth' {
   interface User {
     isAdmin?: boolean;
     name?: string;
+    uid: string;
+    email?: string | null;
+    displayName?: string | null;
   }
 }
