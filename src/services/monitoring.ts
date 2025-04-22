@@ -8,7 +8,7 @@ export const initSentry = () => {
         Sentry.init({
             dsn: import.meta.env.VITE_SENTRY_DSN,
             integrations: [
-                new BrowserTracing() 
+                new BrowserTracing() as unknown as any
             ],
             tracesSampleRate: 1.0,
             environment: import.meta.env.MODE

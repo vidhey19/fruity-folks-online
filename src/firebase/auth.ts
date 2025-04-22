@@ -1,13 +1,11 @@
-
 import { 
-  Auth,
-  createUserWithEmailAndPassword as fbCreateUser, 
-  signInWithEmailAndPassword as fbSignIn, 
-  signOut as fbSignOut, 
-  GoogleAuthProvider as fbGoogleProvider, 
-  signInWithPopup as fbSignInWithPopup,
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  signOut,
+  GoogleAuthProvider,
+  signInWithPopup,
   User,
-  onAuthStateChanged as fbOnAuthStateChanged,
+  onAuthStateChanged,
   UserCredential
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -21,7 +19,7 @@ export const registerWithEmail = async (
   name: string
 ) => {
   try {
-    const userCredential = await fbCreateUser(auth, email, password);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
     // Create a user document in Firestore
@@ -42,7 +40,7 @@ export const registerWithEmail = async (
 // Sign in with email and password
 export const loginWithEmail = async (email: string, password: string) => {
   try {
-    const userCredential = await fbSignIn(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
   } catch (error) {
     logError(error as Error, { context: 'loginWithEmail' });
@@ -53,8 +51,8 @@ export const loginWithEmail = async (email: string, password: string) => {
 // Sign in with Google
 export const loginWithGoogle = async () => {
   try {
-    const provider = new fbGoogleProvider();
-    const userCredential = await fbSignInWithPopup(auth, provider);
+    const provider = new GoogleAuthProvider();
+    const userCredential = await signInWithPopup(auth, provider);
     const user = userCredential.user;
     
     // Check if user exists in Firestore, if not create a new document
@@ -79,7 +77,7 @@ export const loginWithGoogle = async () => {
 // Sign out
 export const logout = async () => {
   try {
-    await fbSignOut(auth);
+    await signOut(auth);
   } catch (error) {
     logError(error as Error, { context: 'logout' });
     throw error;
@@ -127,5 +125,5 @@ export const getUserData = async (user: User) => {
 
 // Auth state observer
 export const onAuthStateChange = (callback: (user: User | null) => void) => {
-  return fbOnAuthStateChanged(auth, callback);
+  return onAuthStateChanged(auth, callback);
 };
