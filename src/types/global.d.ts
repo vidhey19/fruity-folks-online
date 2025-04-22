@@ -1,11 +1,17 @@
 
+// Define interfaces for global objects
+
 // For Google Analytics
 interface Window {
   dataLayer: any[];
   gtag: (...args: any[]) => void;
+  Razorpay: any;
 }
 
-// For Razorpay
-interface Window {
-  Razorpay: any;
+// Update the User type to include our custom fields
+declare module 'firebase/auth' {
+  interface User {
+    isAdmin?: boolean;
+    name?: string;
+  }
 }
