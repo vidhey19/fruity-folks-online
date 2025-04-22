@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { trackEvent } from '../services/monitoring';
 
 // Define the CartItem type
 export interface CartItem {
@@ -21,6 +22,14 @@ export interface CartContextType {
   clearCart: () => void;
   total: number;
   totalItems: number;
+  // Add aliases for compatibility with existing components
+  cart: {
+    items: CartItem[];
+    totalItems: number;
+    totalPrice: number;
+  };
+  addToCart: (product: any, quantity: number) => void;
+  removeFromCart: (id: string) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -64,13 +73,50 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     
     toast.success(`${item.name} added to cart`);
+    trackEvent('Cart', 'Add Item', item.name);
+  };
+
+  // Add product to cart with quantity
+  const addToCart = (product: any, quantity: number) => {
+    // Convert product to CartItem
+    const cartItem: CartItem = {
+      id: product.id.toString(), // Convert to string for consistency
+      name: product.name,
+      price: product.price,
+      salePrice: product.salePrice,
+      image: product.image,
+      quantity: 1
+    };
+
+    setItems(prevItems => {
+      const existingItem = prevItems.find(i => i.id === cartItem.id);
+      
+      if (existingItem) {
+        // Update quantity of existing item
+        return prevItems.map(i => 
+          i.id === cartItem.id 
+            ? { ...i, quantity: i.quantity + quantity } 
+            : i
+        );
+      } else {
+        // Add new item with the specified quantity
+        return [...prevItems, { ...cartItem, quantity }];
+      }
+    });
+    
+    toast.success(`${product.name} added to cart`);
+    trackEvent('Cart', 'Add Item', product.name);
   };
 
   // Remove item from cart
   const removeItem = (id: string) => {
     setItems(prevItems => prevItems.filter(item => item.id !== id));
     toast.info("Item removed from cart");
+    trackEvent('Cart', 'Remove Item', id);
   };
+
+  // Alias for removeItem to maintain compatibility
+  const removeFromCart = removeItem;
 
   // Update item quantity
   const updateQuantity = (id: string, quantity: number) => {
@@ -84,11 +130,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         item.id === id ? { ...item, quantity } : item
       )
     );
+    trackEvent('Cart', 'Update Quantity', id, quantity);
   };
 
   // Clear cart
   const clearCart = () => {
     setItems([]);
+    trackEvent('Cart', 'Clear Cart');
+  };
+
+  // Create cart object for compatibility with existing components
+  const cart = {
+    items,
+    totalItems,
+    totalPrice: total
   };
 
   return (
@@ -99,7 +154,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateQuantity,
       clearCart,
       total,
-      totalItems
+      totalItems,
+      // Aliases for compatibility
+      cart,
+      addToCart,
+      removeFromCart
     }}>
       {children}
     </CartContext.Provider>

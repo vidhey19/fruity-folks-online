@@ -1,15 +1,18 @@
 
 import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
-  GoogleAuthProvider, 
-  signInWithPopup,
+  Auth,
+  UserCredential,
+  createUserWithEmailAndPassword as firebaseCreateUser, 
+  signInWithEmailAndPassword as firebaseSignIn, 
+  signOut as firebaseSignOut, 
+  GoogleAuthProvider as FirebaseGoogleProvider, 
+  signInWithPopup as firebaseSignInWithPopup,
   User,
-  onAuthStateChanged
+  onAuthStateChanged as firebaseOnAuthStateChanged
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './config';
+import { logError } from '../services/monitoring';
 
 // Create user with email and password
 export const registerWithEmail = async (
@@ -18,7 +21,7 @@ export const registerWithEmail = async (
   name: string
 ) => {
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await firebaseCreateUser(auth, email, password);
     const user = userCredential.user;
     
     // Create a user document in Firestore
@@ -31,6 +34,7 @@ export const registerWithEmail = async (
     
     return user;
   } catch (error) {
+    logError(error as Error, { context: 'registerWithEmail' });
     throw error;
   }
 };
@@ -38,9 +42,10 @@ export const registerWithEmail = async (
 // Sign in with email and password
 export const loginWithEmail = async (email: string, password: string) => {
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await firebaseSignIn(auth, email, password);
     return userCredential.user;
   } catch (error) {
+    logError(error as Error, { context: 'loginWithEmail' });
     throw error;
   }
 };
@@ -48,8 +53,8 @@ export const loginWithEmail = async (email: string, password: string) => {
 // Sign in with Google
 export const loginWithGoogle = async () => {
   try {
-    const provider = new GoogleAuthProvider();
-    const userCredential = await signInWithPopup(auth, provider);
+    const provider = new FirebaseGoogleProvider();
+    const userCredential = await firebaseSignInWithPopup(auth, provider);
     const user = userCredential.user;
     
     // Check if user exists in Firestore, if not create a new document
@@ -66,6 +71,7 @@ export const loginWithGoogle = async () => {
     
     return user;
   } catch (error) {
+    logError(error as Error, { context: 'loginWithGoogle' });
     throw error;
   }
 };
@@ -73,8 +79,9 @@ export const loginWithGoogle = async () => {
 // Sign out
 export const logout = async () => {
   try {
-    await signOut(auth);
+    await firebaseSignOut(auth);
   } catch (error) {
+    logError(error as Error, { context: 'logout' });
     throw error;
   }
 };
@@ -94,6 +101,7 @@ export const checkUserIsAdmin = async (user: User) => {
     return false;
   } catch (error) {
     console.error('Error checking admin status:', error);
+    logError(error as Error, { context: 'checkUserIsAdmin' });
     return false;
   }
 };
@@ -112,11 +120,12 @@ export const getUserData = async (user: User) => {
     return null;
   } catch (error) {
     console.error('Error getting user data:', error);
+    logError(error as Error, { context: 'getUserData' });
     return null;
   }
 };
 
 // Auth state observer
 export const onAuthStateChange = (callback: (user: User | null) => void) => {
-  return onAuthStateChanged(auth, callback);
+  return firebaseOnAuthStateChanged(auth, callback);
 };
