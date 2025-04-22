@@ -5,7 +5,6 @@ import { useCart } from "../contexts/CartContext";
 import { useWishlist } from "../contexts/WishlistContext";
 import { useCurrency } from "../contexts/CurrencyContext";
 import { ShoppingCart, Heart, Plus, Minus } from "lucide-react";
-import { toast } from "sonner";
 import { useIsMobile } from "../hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
 
@@ -15,10 +14,13 @@ const ProductCard = ({ product }: { product: Product }) => {
   const { formatPrice } = useCurrency();
   const isMobile = useIsMobile();
   
+  // Convert product ID to string for consistent comparison
+  const productId = String(product.id);
+  
   // Check if the product is in cart and wishlist
-  const productInCart = cart.items.find(item => item.id === product.id);
+  const productInCart = cart.items.find(item => item.id === productId);
   const quantityInCart = productInCart ? productInCart.quantity : 0;
-  const productInWishlist = isInWishlist(product.id);
+  const productInWishlist = isInWishlist(productId);
   
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -32,7 +34,7 @@ const ProductCard = ({ product }: { product: Product }) => {
     e.stopPropagation();
     
     if (quantityInCart > 0) {
-      updateQuantity(product.id, quantityInCart + 1);
+      updateQuantity(productId, quantityInCart + 1);
     } else {
       addToCart(product, 1);
     }
@@ -43,9 +45,9 @@ const ProductCard = ({ product }: { product: Product }) => {
     e.stopPropagation();
     
     if (quantityInCart > 1) {
-      updateQuantity(product.id, quantityInCart - 1);
+      updateQuantity(productId, quantityInCart - 1);
     } else if (quantityInCart === 1) {
-      removeFromCart(product.id);
+      removeFromCart(productId);
     }
   };
   
@@ -54,7 +56,7 @@ const ProductCard = ({ product }: { product: Product }) => {
     e.stopPropagation();
     
     if (productInWishlist) {
-      removeFromWishlist(product.id);
+      removeFromWishlist(productId);
     } else {
       addToWishlist(product);
     }

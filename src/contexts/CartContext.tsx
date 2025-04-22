@@ -3,9 +3,19 @@ import { toast } from 'sonner';
 import { trackEvent } from '../services/monitoring';
 import { Product } from '../data/products';
 
-// Define the CartItem type to match Product
-export interface CartItem extends Product {
+// Define the CartItem type to match Product with string ID
+export interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  salePrice?: number;
+  image: string;
   quantity: number;
+  // Other optional Product fields
+  category?: string;
+  description?: string;
+  weight?: string;
+  bestSeller?: boolean;
 }
 
 // Define the Cart Context type
@@ -51,18 +61,24 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Add item to cart
   const addItem = (item: Product) => {
     setItems(prevItems => {
-      const existingItem = prevItems.find(i => i.id === item.id);
+      // Ensure ID is a string
+      const itemId = String(item.id);
+      const existingItem = prevItems.find(i => i.id === itemId);
       
       if (existingItem) {
         // Update quantity of existing item
         return prevItems.map(i => 
-          i.id === item.id 
+          i.id === itemId 
             ? { ...i, quantity: i.quantity + 1 } 
             : i
         );
       } else {
-        // Add new item
-        return [...prevItems, { ...item, quantity: 1 }];
+        // Add new item with string ID
+        return [...prevItems, { 
+          ...item, 
+          id: itemId,
+          quantity: 1 
+        }];
       }
     });
     
@@ -72,29 +88,26 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Add product to cart with quantity
   const addToCart = (product: Product, quantity: number = 1) => {
-    // Convert product to CartItem
-    const cartItem: CartItem = {
-      id: product.id.toString(), // Convert to string for consistency
-      name: product.name,
-      price: product.price,
-      salePrice: product.salePrice,
-      image: product.image,
-      quantity: 1
-    };
-
+    // Convert product to CartItem with string ID
+    const productId = String(product.id);
+    
     setItems(prevItems => {
-      const existingItem = prevItems.find(i => i.id === cartItem.id);
+      const existingItem = prevItems.find(i => i.id === productId);
       
       if (existingItem) {
         // Update quantity of existing item
         return prevItems.map(i => 
-          i.id === cartItem.id 
+          i.id === productId 
             ? { ...i, quantity: i.quantity + quantity } 
             : i
         );
       } else {
-        // Add new item with the specified quantity
-        return [...prevItems, { ...cartItem, quantity }];
+        // Add new item with the specified quantity and string ID
+        return [...prevItems, { 
+          ...product,
+          id: productId,
+          quantity 
+        }];
       }
     });
     

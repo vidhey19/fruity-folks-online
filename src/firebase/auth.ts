@@ -1,14 +1,14 @@
 
 import { 
-  Auth,
-  UserCredential,
+  getAuth,
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signOut, 
   GoogleAuthProvider, 
   signInWithPopup,
   User,
-  onAuthStateChanged
+  onAuthStateChanged,
+  UserCredential
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './config';

@@ -1,12 +1,19 @@
 
 import React from "react";
-import { Product } from "../data/products";
 import { useCart } from "../contexts/CartContext";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface CartItemProps {
-  item: Product & { quantity: number };
+  item: {
+    id: string;
+    name: string;
+    price: number;
+    salePrice?: number;
+    image: string;
+    quantity: number;
+    weight?: string;
+  };
 }
 
 const CartItem: React.FC<CartItemProps> = ({ item }) => {
