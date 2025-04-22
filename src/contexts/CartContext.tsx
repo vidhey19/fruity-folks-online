@@ -1,34 +1,28 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { trackEvent } from '../services/monitoring';
+import { Product } from '../data/products';
 
-// Define the CartItem type
-export interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  salePrice?: number;
-  image: string;
+// Define the CartItem type to match Product
+export interface CartItem extends Product {
   quantity: number;
 }
 
 // Define the Cart Context type
 export interface CartContextType {
   items: CartItem[];
-  addItem: (item: CartItem) => void;
+  addItem: (item: Product) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   total: number;
   totalItems: number;
-  // Add aliases for compatibility with existing components
   cart: {
     items: CartItem[];
     totalItems: number;
     totalPrice: number;
   };
-  addToCart: (product: any, quantity: number) => void;
+  addToCart: (product: Product, quantity?: number) => void;
   removeFromCart: (id: string) => void;
 }
 
@@ -55,7 +49,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [items]);
 
   // Add item to cart
-  const addItem = (item: CartItem) => {
+  const addItem = (item: Product) => {
     setItems(prevItems => {
       const existingItem = prevItems.find(i => i.id === item.id);
       
@@ -77,7 +71,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Add product to cart with quantity
-  const addToCart = (product: any, quantity: number) => {
+  const addToCart = (product: Product, quantity: number = 1) => {
     // Convert product to CartItem
     const cartItem: CartItem = {
       id: product.id.toString(), // Convert to string for consistency

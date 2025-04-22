@@ -2,13 +2,13 @@
 import { 
   Auth,
   UserCredential,
-  createUserWithEmailAndPassword as firebaseCreateUser, 
-  signInWithEmailAndPassword as firebaseSignIn, 
-  signOut as firebaseSignOut, 
-  GoogleAuthProvider as FirebaseGoogleProvider, 
-  signInWithPopup as firebaseSignInWithPopup,
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut, 
+  GoogleAuthProvider, 
+  signInWithPopup,
   User,
-  onAuthStateChanged as firebaseOnAuthStateChanged
+  onAuthStateChanged
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './config';
@@ -21,7 +21,7 @@ export const registerWithEmail = async (
   name: string
 ) => {
   try {
-    const userCredential = await firebaseCreateUser(auth, email, password);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
     // Create a user document in Firestore
@@ -42,7 +42,7 @@ export const registerWithEmail = async (
 // Sign in with email and password
 export const loginWithEmail = async (email: string, password: string) => {
   try {
-    const userCredential = await firebaseSignIn(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
   } catch (error) {
     logError(error as Error, { context: 'loginWithEmail' });
@@ -53,8 +53,8 @@ export const loginWithEmail = async (email: string, password: string) => {
 // Sign in with Google
 export const loginWithGoogle = async () => {
   try {
-    const provider = new FirebaseGoogleProvider();
-    const userCredential = await firebaseSignInWithPopup(auth, provider);
+    const provider = new GoogleAuthProvider();
+    const userCredential = await signInWithPopup(auth, provider);
     const user = userCredential.user;
     
     // Check if user exists in Firestore, if not create a new document
@@ -79,7 +79,7 @@ export const loginWithGoogle = async () => {
 // Sign out
 export const logout = async () => {
   try {
-    await firebaseSignOut(auth);
+    await signOut(auth);
   } catch (error) {
     logError(error as Error, { context: 'logout' });
     throw error;
@@ -127,5 +127,5 @@ export const getUserData = async (user: User) => {
 
 // Auth state observer
 export const onAuthStateChange = (callback: (user: User | null) => void) => {
-  return firebaseOnAuthStateChanged(auth, callback);
+  return onAuthStateChanged(auth, callback);
 };
